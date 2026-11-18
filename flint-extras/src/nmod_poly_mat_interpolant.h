@@ -1,5 +1,6 @@
 /*
     Copyright (C) 2026 Gilles Villard
+    Copyright (C) 2026 Vincent Neiger
 
     This file is part of PML.
 
@@ -199,12 +200,26 @@ void nmod_poly_mat_mintbasis(nmod_poly_mat_t intbas,
  * points, find the residual matrix for the second half, compute a second
  * basis for it, and deduce the sought basis by multiplying the two.
  *
- * The residual here is `d2` independent evaluate-then-multiply operations, 
- * `R_i = P1(pts[d1+i])*E_{d1+i}`, `i=0..d2-1` -- no analogue of
- * `pmbasis`'s middle product for interpolation.
+ * The residual here is `d2` evaluate-then-multiply operations,
+ * `R_i = P1(pts[d1+i])*E_{d1+i}`, `i=0..d2-1`. When `n^2 <= m` and
+ * `16 n <= m` for a modulus of at most 52 bits (above: `n = 1` and
+ * `m >= 32`, or `n^2 <= m` and `64 n <= m`), they are computed from the
+ * coefficients of `P1`, as
+ * `deg(P1)+1` products of constant matrices by `[E_{d1} | ... | E_{d-1}]`
+ * combined by Horner's rule at the points, otherwise by one evaluation of
+ * `P1` per point.
  *
  * At the end of the computation, the vector `shift` contains the shifted
  * row degree of `intbas`, for the input shift.
+ *
+ * Krylov leaves: as in pmbasis (see @ref pmbasis), at each node of the
+ * recursion, with `E_k` of size `m x n` and `d` points at this node, if `n <
+ * m` and `n d <= c m / n^(1/3)`, the basis of this node is computed
+ * directly by ::nmod_poly_mat_interpolant_basis_krylov, on the `m x nd`
+ * matrix `[E_0 | ... | E_{d-1}]` with each point repeated `n` times. The
+ * output is then `shift`-Popov if such a leaf is used at the top of the
+ * recursion, and `shift`-ordered weak Popov (with the same `shift`-row degree)
+ * in any case. This also holds for the functions in @ref pmintbasis_geometric.
  *
  * Size of the integers (see @ref IntegerSizes): it is assumed that
  * `max(shift) + d <= WORD_MAX` for the input `shift`, where `d` is the number
@@ -234,7 +249,10 @@ void nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
  * machinery (`nmod_geometric_progression_t`,`nmod_poly.h`). 
  * One such structure is built once, at the top of the
  * whole recursion, and reused (at varying, always-shorter requested
- * lengths). 
+ * lengths). When the first basis of a node has a small degree, the residual
+ * is instead computed from its coefficients, as in @ref pmintbasis (rule
+ * `_nmod_poly_mat_evaluate_mul_columns_wanted_geometric` in
+ * nmod_poly_mat_extra/impl.h).
  *
  * Size of the integers (see @ref IntegerSizes): as in @ref pmintbasis, it is
  * assumed that `max(shift) + d <= WORD_MAX` for the input `shift`.
@@ -313,6 +331,92 @@ void nmod_poly_mat_pmintbasis_geometric_auto(nmod_poly_mat_t intbas,
 
 
 
+
+/** @name General interface for interpolant basis computation
+ */
+//@{
+
+/** Computes a `shift`-ordered weak Popov basis `P`, or the `shift`-Popov one
+ * if `form` is `POPOV`, of the module of vectors `p` of `m` polynomials such
+ * that `p_0(pts[b]) V[0,b] + ... + p_{m-1}(pts[b]) V[m-1,b] = 0` for each
+ * column `b` of the `m x D` matrix `V` (one point per column, points may be
+ * repeated: as in ::nmod_poly_mat_interpolant_basis_krylov, a point repeated
+ * in several columns gives several conditions of order 1 at that point).
+ * With `form` among `NONE`, `REDUCED`, `WEAK_POPOV`, `ORD_WEAK_POPOV`, the
+ * basis is `shift`-ordered weak Popov, which implies these forms. Left
+ * interpolants (rows), ROW_LOWER pivots. The input of ::nmod_poly_mat_pmintbasis,
+ * `d` matrices `E_k` of size `m x n` at the points `pts_k`, is the matrix
+ * `V = [E_0 | ... | E_{d-1}]` with each point repeated `n` times.
+ *
+ * The columns of `V` are sorted by point, and the algorithm is a divide and
+ * conquer on `D` (see nmod_poly_mat_extra/interpolant_basis_general.c), with
+ * `d` the number of distinct points and `n` the largest number of columns at
+ * one point:
+ * - when every point has the same number of columns, ::nmod_poly_mat_pmintbasis
+ *   (with its Krylov leaves, see @ref pmintbasis);
+ * - otherwise, when `n' < m` and `D <= c m / n'^(1/3)` for
+ *   `n' = ceil(D / d)` (the average number of columns per point), one call
+ *   to ::nmod_poly_mat_interpolant_basis_krylov (the `shift`-Popov basis);
+ * - otherwise, a first basis for the first `floor(D/2)` columns, a second
+ *   one for the other columns multiplied by the first basis evaluated at
+ *   their points, and their product.
+ * The value of c is NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_CUTOFF, as for
+ * approximants (nmod_poly_mat_extra/impl.h).
+ * For `POPOV`, unless the basis found is already in `shift`-Popov form, a
+ * second basis is computed with the shift `-delta`, where `delta` is the
+ * `shift`-pivot degree, and normalized by the inverse of its leading matrix.
+ *
+ * \param[out] P interpolant basis, initialized with dimensions `m x m`
+ * \param[out] rdeg the `shift`-row degree of `P` (length `m`), or `NULL`; it may alias `shift`
+ * \param[in] V the `m x D` matrix of values
+ * \param[in] pts the `D` points, one per column of `V`
+ * \param[in] shift input shift (length `m`), or `NULL` for the zero shift
+ * \param[in] form required form for the output basis (see #poly_mat_form_t), at most `POPOV`
+ *
+ * Size of the integers (see @ref IntegerSizes): it is assumed that
+ * `max(shift) - min(shift) + D <= WORD_MAX`.
+ */
+void nmod_poly_mat_interpolant_basis(nmod_poly_mat_t P,
+                                     slong * rdeg,
+                                     const nmod_mat_t V,
+                                     nn_srcptr pts,
+                                     const slong * shift,
+                                     poly_mat_form_t form);
+
+//@} // doxygen group: General interface for interpolant basis computation
+
+/** @name Interpolant bases via Krylov matrices
+ */
+//@{
+
+/** Computes the basis `P` in `shift`-Popov form (row-wise, with ROW_LOWER
+ * pivots, see @ref MatrixForms), which is unique, of the module of vectors
+ * `p` of `m` polynomials such that `p_0(pts[b]) V[0,b] + ... +
+ * p_{m-1}(pts[b]) V[m-1,b] = 0` for each column `b` of the `m x D` matrix
+ * `V`, by linear algebra on the Krylov matrix of `V` with respect to the
+ * `D x D` diagonal matrix `diag(pts)` (see @ref KrylovMatrices, and
+ * ::nmod_poly_mat_krylov_kernel_basis_jordan for general relation bases, in
+ * nmod_poly_mat_relation_basis.h).
+ *
+ * Each column of `V` is one condition of order 1. Points may be repeated: a
+ * point repeated in several columns gives several such conditions with
+ * different vectors of values (as with ::nmod_poly_mat_mintbasis), not a
+ * multiplicity; for conditions modulo `(x - pt)^d`, which involve
+ * derivatives, see ::nmod_poly_mat_mpade_basis_krylov, of which this is the
+ * case of a constant matrix with all orders 1.
+ *
+ * The output `P` must be initialized with dimensions `m x m`; `shift == NULL`
+ * means the zero shift; the modulus must be prime. Size of the integers (see
+ * @ref IntegerSizes): there is no condition on the shift, whose entries may
+ * be arbitrary `slong` values. The cost is about `D^2 (D + m)` operations,
+ * suited to `D` not much larger than `m`.
+ */
+void nmod_poly_mat_interpolant_basis_krylov(nmod_poly_mat_t P,
+                                            const nmod_mat_t V,
+                                            nn_srcptr pts,
+                                            const slong * shift);
+
+//@} // doxygen group: Interpolant bases via Krylov matrices
 
 #ifdef __cplusplus
 }

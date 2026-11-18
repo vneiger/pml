@@ -43,6 +43,31 @@
 # define PML_NMOD_MAT_MUL_SMALL_BITS 32
 #endif
 
+/* Middle products with a short left operand and few columns go to products
+   of coefficient matrices (_nmod_poly_mat_mulmid_coeffs, mulmid.c), for
+   pmat1 of size at least k x k, k >= 2, and pmat2 with n columns, when
+   - (len1 n)^2 <= NMOD_POLY_MAT_MULMID_COEFFS_K k, for a modulus of at most
+     NMOD_POLY_MAT_MULMID_COEFFS_BITS bits;
+   - (len1 n)^2 <= NMOD_POLY_MAT_MULMID_COEFFS_K_LARGE k and
+     len1 n <= NMOD_POLY_MAT_MULMID_COEFFS_MAX_LARGE, for larger moduli, where
+     nmod_mat_mul has no SIMD kernel in FLINT and the products of constant
+     matrices lose sooner against the FFT routines. */
+#ifndef NMOD_POLY_MAT_MULMID_COEFFS_K
+# define NMOD_POLY_MAT_MULMID_COEFFS_K 64
+#endif
+
+#ifndef NMOD_POLY_MAT_MULMID_COEFFS_BITS
+# define NMOD_POLY_MAT_MULMID_COEFFS_BITS 52
+#endif
+
+#ifndef NMOD_POLY_MAT_MULMID_COEFFS_K_LARGE
+# define NMOD_POLY_MAT_MULMID_COEFFS_K_LARGE 16
+#endif
+
+#ifndef NMOD_POLY_MAT_MULMID_COEFFS_MAX_LARGE
+# define NMOD_POLY_MAT_MULMID_COEFFS_MAX_LARGE 32
+#endif
+
 /* Hermite form helpers */
 void _atomic_solve_pivot_collision_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other,
                                                     slong pi1, slong pi2, slong j);
@@ -120,6 +145,235 @@ slong _nmod_poly_mat_evaluate_geometric_chunk_length(const nmod_poly_mat_t pmat,
  * alias B, but not A or PB. (nmod_poly_mat_det.c) */
 int _nmod_mat_det_solve_lu(ulong * c, nmod_mat_t X, nmod_mat_t A, const nmod_mat_t B,
                            slong * perm, nmod_mat_t PB);
+
+/* ------------------------------------------------------------------------ */
+/* Krylov leaves of the approximant and interpolant bases                   */
+/* ------------------------------------------------------------------------ */
+
+/* The direct Krylov functions (nmod_poly_mat_approximant_basis_krylov,
+ * nmod_poly_mat_interpolant_basis_krylov) cost about D^2 (D + m) operations
+ * for an m-row problem with D conditions (the sum of the orders), whatever
+ * the shift and however D is split into columns, whereas the cost of pmbasis
+ * and pmintbasis grows with m and decreases with the number of columns n.
+ * Krylov is chosen when
+ *     n < m   and   D <= c m / n^(1/3),
+ * with two values of the cutoff c:
+ * - NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF, inside pmbasis and pmintbasis (one
+ *   order d, D = n d): the test is made at each node of the recursion, so
+ *   that Krylov replaces the whole subtree below the first node where it
+ *   holds;
+ * - NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_CUTOFF, in the divide and conquer
+ *   for orders per column (nmod_poly_mat_approximant_basis and
+ *   nmod_poly_mat_interpolant_basis), where the alternative to a direct call
+ *   is a split whose two halves have dense m x m products, and where nodes
+ *   with one order go to pmbasis; there n is the average number of
+ *   conditions per level, ceil(D / dmax) for orders d_b <= dmax (resp.
+ *   ceil(D / number of points) for interpolants), which is n for one order
+ *   and is smaller than the number of columns when few columns have the
+ *   largest orders.
+ * 2026-11 Values measured with p-approximant_basis (modes leaf, ileaf, orders,
+ * interp) on Zen 4, Ice Lake, Cascade Lake and Apple M4, at 30, 50 and 60 bits
+ * (m = 16 to 256, n = 1 to m/2, D = m/4 to 32m).
+ * Inside pmbasis and pmintbasis, c = 6 is the best of 4, 6, 8, 12, 16 on
+ * all twelve machine and modulus pairs (1.02 to 1.04 of the best value on
+ * average, 1.04 to 1.09 for 8). For the direct calls, c = 8 is the best of
+ * 4, 8, 16 or within 0.03 of it; c = 4 would be better for m = 256 (about
+ * 1.2x at D = 4m) and worse for m = 16.
+ * TODO a cutoff depending on m for the direct calls; at the smallest orders
+ * with n = m/4 to m/2 the leaf can lose (PR table, 2026-11, the four machines,
+ * 30 to 60 bits: pmintbasis 64 x 16 at d = 8 down to 0.56x, 32 x 16 at d = 4
+ * down to 0.61x, pmbasis 64 x 16 at d = 8 down to 0.72x, all below 2 ms),
+ * but n < m/4 would lose more than it saves (at n = m/4 the leaf is 1.07 to
+ * 1.52 times faster on average over all orders). */
+#ifndef NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF
+# define NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF 6.0
+#endif
+
+#ifndef NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_CUTOFF
+# define NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_CUTOFF 8.0
+#endif
+
+/* whether a node with m rows, n columns (or conditions per point) and D
+ * conditions in total goes to Krylov: n < m and D^3 n <= (cutoff m)^3; never
+ * for n = 0, D = 0 or cutoff <= 0 */
+static inline int
+_nmod_poly_mat_krylov_wanted(slong m, slong n, slong D, double cutoff)
+{
+    double a;
+
+    if (n < 1 || n >= m || D < 1 || cutoff <= 0.0)
+        return 0;
+
+    a = cutoff * (double) m;
+    return (double) D * (double) D * (double) D * (double) n <= a * a * a;
+}
+
+/* Krylov leaves with the contract of pmbasis and pmintbasis: shift is the
+ * input shift on entry and the shift-row degree of the output on exit; the
+ * output is the shift-Popov basis, whose shift-row degree is shift[i] +
+ * deg(P[i,i]) (approximant_basis.c, interpolant_basis.c). */
+
+/* approximant basis of F at order orders[j] for column j */
+void _nmod_poly_mat_approximant_basis_krylov_leaf(nmod_poly_mat_t P, slong * shift,
+                                                  const nmod_poly_mat_t F,
+                                                  const slong * orders);
+
+/* interpolant basis of (V, pts), one point per column of V */
+void _nmod_poly_mat_interpolant_basis_krylov_leaf(nmod_poly_mat_t P, slong * shift,
+                                                  const nmod_mat_t V,
+                                                  nn_srcptr pts);
+
+/* interpolant basis of (E, pts) as in nmod_poly_mat_pmintbasis: d matrices
+ * E[k] of size m x n at the points pts[0], ..., pts[d-1] */
+void _nmod_poly_mat_pmintbasis_krylov_leaf(nmod_poly_mat_t P, slong * shift,
+                                           const ulong * pts,
+                                           const nmod_mat_struct * E, slong d);
+
+/* R[:, b] = P(pts[b]) V[:, b] for each column b of V, from the coefficients
+ * of P: R = sum_k P_k V diag(pts)^k by Horner's rule, deg(P) + 1 products of
+ * constant matrices; with c columns, R is P->r x c and V is P->c x c, and R
+ * must not alias V (interpolant_basis.c) */
+void _nmod_poly_mat_evaluate_mul_columns(nmod_mat_t R, const nmod_poly_mat_t P,
+                                         const nmod_mat_t V, nn_srcptr pts);
+
+/* Whether the residual of an interpolant basis with m rows and n columns per
+ * point is computed from the coefficients of the first basis
+ * (_nmod_poly_mat_evaluate_mul_columns) rather than by one evaluation of it
+ * per point: n^2 <= m and 16 n <= m for a modulus of at most
+ * NMOD_POLY_MAT_MULMID_COEFFS_BITS bits (see interpolant_basis.c); above,
+ * where nmod_mat_mul has no SIMD kernel in FLINT, n = 1 with m >= 32, or
+ * n^2 <= m and 64 n <= m. Comes from measurements on 2026-11-16 on 4
+ * Intel / AMD / Apple machines. On the residual step alone (2026-11-17, Ice
+ * Lake, Cascade Lake, Apple M4; 30, 50, 60 bits; m = 16 to 256, n up to m/8,
+ * deg(P1) = n d2 / m and 4 times smaller or larger), this rule takes 1.05 to
+ * 1.16 times the time of the better of the two on average (at worst 2.4 to
+ * 6.9): the better choice also depends on deg(P1), as in the rule below.
+ * TODO a rule depending on deg(P1) */
+static inline int
+_nmod_poly_mat_evaluate_mul_columns_wanted(slong m, slong n, ulong modulus)
+{
+    if (FLINT_BIT_COUNT(modulus) <= NMOD_POLY_MAT_MULMID_COEFFS_BITS)
+        return (n * n <= m && 16 * n <= m);
+    return (n == 1) ? (m >= 32) : (n * n <= m && 64 * n <= m);
+}
+
+/* The same choice in pmintbasis_geometric, where the alternative is the
+ * evaluation of all the entries of the first basis at the geometric points
+ * (_nmod_poly_mat_evaluate_geometric), whose cost does not depend on its
+ * degree deg: the coefficients when n^(3/2) (deg + 1) <= 2 m for a modulus of
+ * at most NMOD_POLY_MAT_MULMID_COEFFS_BITS bits, and <= m above.
+ *
+ * Measured 2026-11, the residual step alone (Ice Lake, Cascade Lake, Apple
+ * M4; 30, 50, 60 bits; m = 16 to 256, n up to m/8, d2 = 16 to 8192, deg = n d2 / m
+ * and 4 times smaller or larger): this rule takes 1.00 to 1.06 times the time
+ * of the better of the two on average (at worst 2.7); the ratio geometric /
+ * coefficients fits m^(0.4 to 0.8) / (n^0.95 (deg + 1)^0.65) up to a constant.
+ *
+ * On the whole of pmintbasis_geometric (PR table, 2026-11-17, same machines,
+ * m = 16 to 512), this takes 0.65 to 1.05 times the time of pmintbasis at
+ * 30 and 50 bits (median over the orders of each m x n). At 50 bits on x86,
+ * where the geometric evaluation takes twice its 30-bit time and the
+ * products of coefficients the same, the geometric version is up to 1.8
+ * times slower than pmintbasis at the largest orders with few columns (32 x 1
+ * at d = 4096), and the constant 3 would be better there (residual step: 1.01
+ * instead of 1.03 to 1.06 on average).
+ * TODO a constant depending on the modulus size and the architecture
+ **/
+static inline int
+_nmod_poly_mat_evaluate_mul_columns_wanted_geometric(slong m, slong n,
+                                                     slong deg, ulong modulus)
+{
+    const double c = (FLINT_BIT_COUNT(modulus) <= NMOD_POLY_MAT_MULMID_COEFFS_BITS) ? 2.0 : 1.0;
+    const double y = (double) (deg + 1);
+    /* n^(3/2) (deg + 1) <= c m, squared */
+    return (double) n * n * n * y * y <= c * c * (double) m * (double) m;
+}
+
+/* pmbasis and pmintbasis with the Krylov cutoff as a parameter
+ * (krylov_cutoff = 0: no Krylov leaf); nmod_poly_mat_pmbasis and
+ * nmod_poly_mat_pmintbasis use NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF. For
+ * profiling and tests. */
+void _nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas, slong * shift,
+                            const nmod_poly_mat_t pmat, slong order,
+                            double krylov_cutoff);
+
+void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas, slong * shift,
+                               const ulong * pts, const nmod_mat_struct * E,
+                               slong d, double krylov_cutoff);
+
+/* Divide and conquer for orders per column (approximant_basis_general.c)
+ * and for one point per column (interpolant_basis_general.c), behind
+ * nmod_poly_mat_approximant_basis and nmod_poly_mat_interpolant_basis. A
+ * node with one order for all its columns (resp. as many columns at each of
+ * its points) goes to pmbasis (resp. pmintbasis); otherwise a node with
+ * few conditions goes to the direct Krylov function; otherwise, for
+ * approximants whose orders are close to each other, the node goes to
+ * pmbasis on its input with each column multiplied by x^(dmax - d_b), at
+ * order dmax; otherwise the node is split into two halves of about D/2
+ * conditions each. */
+
+/* close orders: pmbasis on the input raised to the largest order when
+ * n dmax <= (1 + eps) D, eps = NMOD_POLY_MAT_APPROXIMANT_BASIS_ORDER_SLACK
+ * (never if eps is negative). 2026-11 measurements (Zen 4, Ice Lake, Cascade
+ * Lake, Apple M4; 30, 50, 60 bits): 0.25 is the best of -1, 0.25, 0.5, 1 on
+ * average; with two distinct orders (d, d, d/2, d/2: n dmax = 1.33 D), the
+ * split gives two pmbasis calls and eps must be at most 0.25, while many
+ * distinct orders (m/2 columns in [d/4, d]: 1.6 D) prefer eps = 1.
+ * TODO a slack depending on the number of distinct orders */
+#ifndef NMOD_POLY_MAT_APPROXIMANT_BASIS_ORDER_SLACK
+# define NMOD_POLY_MAT_APPROXIMANT_BASIS_ORDER_SLACK 0.25
+#endif
+
+typedef struct
+{
+    double leaf_cutoff;    /* cutoff of the Krylov leaf of pmbasis, pmintbasis */
+    double direct_cutoff;  /* cutoff of the direct Krylov calls */
+    double order_slack;    /* close orders, see above (approximants) */
+    int split;             /* approximants: 0 to cut at a quasi-uniform order
+                            * tau (orders min(d_b, tau) in the first half),
+                            * 1 to cut each order in half (interpolants always
+                            * cut at D/2) */
+}
+_nmod_poly_mat_relation_basis_dac_params_struct;
+
+typedef _nmod_poly_mat_relation_basis_dac_params_struct
+        _nmod_poly_mat_relation_basis_dac_params_t[1];
+
+/* the parameters used by nmod_poly_mat_approximant_basis and
+ * nmod_poly_mat_interpolant_basis */
+static inline void
+_nmod_poly_mat_relation_basis_dac_params_init(_nmod_poly_mat_relation_basis_dac_params_t prm)
+{
+    prm->leaf_cutoff = NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF;
+    prm->direct_cutoff = NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_CUTOFF;
+    prm->order_slack = NMOD_POLY_MAT_APPROXIMANT_BASIS_ORDER_SLACK;
+    prm->split = 0;
+}
+
+/* shift-ordered weak Popov approximant basis of F at order orders[j] for
+ * column j, with the contract of pmbasis (shift in, shifted row degree out;
+ * shift entries plus the sum of the orders at most WORD_MAX) */
+void _nmod_poly_mat_approximant_basis(nmod_poly_mat_t P, slong * shift,
+                                      const nmod_poly_mat_t F,
+                                      const slong * orders,
+                                      const _nmod_poly_mat_relation_basis_dac_params_t prm);
+
+/* shift-ordered weak Popov interpolant basis of (V, pts), one point per
+ * column of V, with the contract of pmintbasis (shift in, shifted row degree
+ * out); the columns of V must be sorted by point (equal points adjacent) */
+void _nmod_poly_mat_interpolant_basis(nmod_poly_mat_t P, slong * shift,
+                                      const nmod_mat_t V, nn_srcptr pts,
+                                      const _nmod_poly_mat_relation_basis_dac_params_t prm);
+
+/* the s-Popov basis from an s-ordered weak Popov basis P of the same module,
+ * with shifted row degree rdeg (in place): with delta = rdeg - s, a basis R
+ * computed by `basis` with shift -delta has (-delta)-row degree 0, and P =
+ * lm(R)^(-1) R, with lm(R) its (-delta)-leading matrix; `basis` computes a
+ * shift-ordered weak Popov basis of the module with the contract of pmbasis
+ * (shift in, shifted row degree out), `data` is passed to it */
+void _nmod_poly_mat_popov_from_second_relation_basis(nmod_poly_mat_t P,
+        const slong * shift, const slong * rdeg,
+        void (* basis)(nmod_poly_mat_t, slong *, const void *), const void * data);
 
 
 /* ------------------------------------------------------------------------ */

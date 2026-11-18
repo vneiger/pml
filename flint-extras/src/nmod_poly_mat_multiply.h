@@ -230,6 +230,23 @@ void _nmod_poly_mat_mulmid_naive(nmod_poly_mat_t res,
                                  const nmod_poly_mat_t pmat2, slong len2,
                                  slong nlo, slong nhi);
 
+/** actual worker: products of coefficient matrices, for a short pmat1
+ * - res = sum over l < len1 of A_l * B_[nlo-l, nhi-l), with A_l the
+ *   coefficient of degree l of pmat1 and B_[a, b) the coefficients a to
+ *   b-1 of the entries of pmat2: len1 products m x k x (n (nhi - nlo))
+ *   of constant matrices, for pmat1 m x k and pmat2 k x n
+ * - suited to a short pmat1 and few columns (the residual of an approximant
+ *   basis with few columns), where the other routines transform the m k
+ *   entries of pmat1 at the length of the window
+ * - output may alias input
+ *
+ * TODO see implem file for a few TODOs for this
+ */
+void _nmod_poly_mat_mulmid_coeffs(nmod_poly_mat_t res,
+                                  const nmod_poly_mat_t pmat1, slong len1,
+                                  const nmod_poly_mat_t pmat2, slong len2,
+                                  slong nlo, slong nhi);
+
 /** actual workers: middle product via the fft_small transforms, as the
  * multiplications nmod_poly_mat_mul_sd_fft_direct and
  * nmod_poly_mat_mul_sd_fft_matmul but with the plan built for the window

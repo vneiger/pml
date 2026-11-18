@@ -473,6 +473,17 @@ TEST_FUNCTION_START(nmod_poly_mat_pmbasis, state)
             ulong order = n_randint(state, 150);
             ulong len = n_randint(state, 150);
 
+            /* every other input: few columns compared to the number of rows,
+             * so that the Krylov leaf is used, at the top of the recursion
+             * or below (n < m and n order <= c m / n^(1/3)) */
+            if (i % 2)
+            {
+                rdim = 4 + n_randint(state, 21);
+                cdim = 1 + n_randint(state, FLINT_MAX(1, rdim / 4));
+                order = n_randint(state, 400);
+                len = n_randint(state, 400);
+            }
+
             slong prime = n_randprime(state, nbits, 1);
 
             result = one_test_pmbasis(prime, rdim, cdim, order, len, state);

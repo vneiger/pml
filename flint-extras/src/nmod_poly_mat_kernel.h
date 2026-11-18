@@ -1,5 +1,6 @@
 /*
     Copyright (C) 2025 Gilles Villard
+    Copyright (C) 2026 Vincent Neiger
 
     This file is part of PML.
 

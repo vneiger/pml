@@ -39,15 +39,19 @@
 #include "t-solve_series_high_order_lifting.c"
 #include "t-mbasis.c"
 #include "t-pmbasis.c"
+#include "t-approximant_basis.c"
 #include "t-pmintbasis.c"
 #include "t-pmintbasis_nondistinct.c"
 #include "t-pmintbasis_geometric.c"
 #include "t-pmintbasis_geometric_auto.c"
+#include "t-interpolant_basis.c"
 #include "t-reverse.c"
 #include "t-rand.c"
 #include "t-row_basis.c"
 #include "t-row_basis_left_factor.c"
 #include "t-weak_popov_form.c"
+#include "t-krylov_kernel_basis.c"
+#include "t-relation_basis_krylov.c"
 
 /* Array of test functions ***************************************************/
 
@@ -78,15 +82,19 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_solve_series_dixon),
     TEST_FUNCTION(nmod_poly_mat_solve_series_high_order_lifting),
     TEST_FUNCTION(nmod_poly_mat_pmbasis),
+    TEST_FUNCTION(nmod_poly_mat_approximant_basis),
     TEST_FUNCTION(nmod_poly_mat_pmintbasis),
     TEST_FUNCTION(nmod_poly_mat_pmintbasis_nondistinct),
     TEST_FUNCTION(nmod_poly_mat_pmintbasis_geometric),
     TEST_FUNCTION(nmod_poly_mat_pmintbasis_geometric_auto),
+    TEST_FUNCTION(nmod_poly_mat_interpolant_basis),
     TEST_FUNCTION(nmod_poly_mat_reverse),
     TEST_FUNCTION(nmod_poly_mat_rand),
     TEST_FUNCTION(nmod_poly_mat_row_basis),
     TEST_FUNCTION(nmod_poly_mat_row_basis_left_factor),
     TEST_FUNCTION(nmod_poly_mat_weak_popov_form),
+    TEST_FUNCTION(nmod_poly_mat_krylov_kernel_basis),
+    TEST_FUNCTION(nmod_poly_mat_relation_basis_krylov),
 };
 
 /* main function *************************************************************/

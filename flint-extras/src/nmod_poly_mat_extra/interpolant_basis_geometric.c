@@ -17,7 +17,7 @@
 #include "nmod_poly_mat_interpolant.h"
 #include "nmod_mat_poly.h"
 #include "nmod_poly_mat_utils.h"
-#include "impl.h"  /* for _nmod_poly_mat_evaluate_geometric */
+#include "impl.h"  /* for _nmod_poly_mat_evaluate_geometric and the Krylov leaf */
 
 /* Same D&C shape as nmod_poly_mat_pmintbasis (interpolant_basis.c), but
    points are rho_start * rho^k (k=0..d-1), rho = r^2, using one shared,
@@ -37,6 +37,21 @@ static void _pmintbasis_geometric_rec(nmod_poly_mat_t intbas,
 {
     ulong rho = nmod_mul(r, r, mod);
     const slong m = intbas->r;
+
+    /* Krylov leaf: replaces the subtree below this node */
+    if (_nmod_poly_mat_krylov_wanted(m, n, n * d, NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF))
+    {
+        ulong * pts = (ulong *) flint_malloc(d * sizeof(ulong));
+        ulong cur = rho_start;
+        for (slong k = 0; k < d; k++)
+        {
+            pts[k] = cur;
+            cur = nmod_mul(cur, rho, mod);
+        }
+        _nmod_poly_mat_pmintbasis_krylov_leaf(intbas, shift, pts, E, d);
+        flint_free(pts);
+        return;
+    }
 
     if (d <= PMINTBASIS_THRES)
     {
@@ -79,30 +94,68 @@ static void _pmintbasis_geometric_rec(nmod_poly_mat_t intbas,
        (evaluation doesn't vanish automatically the way truncation does).
        In particular, the entries of P1 are not longer than G->len, as
        _nmod_poly_mat_evaluate_geometric requires. */
-    ulong * P1vals = (ulong *) flint_malloc(m * m * d2 * sizeof(ulong));
-    _nmod_poly_mat_evaluate_geometric(P1vals, P1, zeta, G, d2);
-
-    /* R, the "new E" for the second half's recursive call, is a plain
-       array too -- nmod_mat_mul writes each R_i directly. */
+    /* the residual from the coefficients of P1 when its degree is small
+       (_nmod_poly_mat_evaluate_mul_columns_wanted_geometric), as in
+       pmintbasis; otherwise by evaluating all its entries at the d2 points */
     nmod_mat_struct * R = (nmod_mat_struct *) flint_malloc(FLINT_MAX(d2, 1) * sizeof(nmod_mat_struct));
-    nmod_mat_t evalP1;
-    nmod_mat_init(evalP1, m, m, intbas->modulus);
-    for (slong idx = 0; idx < d2; idx++)
+    nmod_mat_t Rcat;
+    const int coeffs = _nmod_poly_mat_evaluate_mul_columns_wanted_geometric(m, n,
+                           nmod_poly_mat_degree(P1), intbas->modulus);
+    if (coeffs)
     {
-        for (slong i = 0; i < m; i++)
-            for (slong j = 0; j < m; j++)
-                nmod_mat_entry(evalP1, i, j) = P1vals[(i * m + j) * d2 + idx];
-        nmod_mat_init(R + idx, m, n, intbas->modulus);
-        nmod_mat_mul(R + idx, evalP1, E + (d1 + idx));
+        nmod_mat_t Ecat, W;
+        nn_ptr cpts = _nmod_vec_init(FLINT_MAX(n * d2, 1));
+        ulong cur = zeta;
+        nmod_mat_init(Ecat, m, n * d2, intbas->modulus);
+        nmod_mat_init(Rcat, m, n * d2, intbas->modulus);
+        for (slong idx = 0; idx < d2; idx++)
+        {
+            nmod_mat_window_init(W, Ecat, 0, idx * n, m, (idx + 1) * n);
+            nmod_mat_set(W, E + (d1 + idx));
+            nmod_mat_window_clear(W);
+            for (slong j = 0; j < n; j++)
+                cpts[idx * n + j] = cur;
+            cur = nmod_mul(cur, rho, mod);
+        }
+        _nmod_poly_mat_evaluate_mul_columns(Rcat, P1, Ecat, cpts);
+        for (slong idx = 0; idx < d2; idx++)
+            nmod_mat_window_init(R + idx, Rcat, 0, idx * n, m, (idx + 1) * n);
+        nmod_mat_clear(Ecat);
+        _nmod_vec_clear(cpts);
     }
-    nmod_mat_clear(evalP1);
-    flint_free(P1vals);
+    else
+    {
+        ulong * P1vals = (ulong *) flint_malloc(m * m * d2 * sizeof(ulong));
+        _nmod_poly_mat_evaluate_geometric(P1vals, P1, zeta, G, d2);
+
+        /* R, the "new E" for the second half's recursive call, is a plain
+           array too -- nmod_mat_mul writes each R_i directly. */
+        nmod_mat_t evalP1;
+        nmod_mat_init(evalP1, m, m, intbas->modulus);
+        for (slong idx = 0; idx < d2; idx++)
+        {
+            for (slong i = 0; i < m; i++)
+                for (slong j = 0; j < m; j++)
+                    nmod_mat_entry(evalP1, i, j) = P1vals[(i * m + j) * d2 + idx];
+            nmod_mat_init(R + idx, m, n, intbas->modulus);
+            nmod_mat_mul(R + idx, evalP1, E + (d1 + idx));
+        }
+        nmod_mat_clear(evalP1);
+        flint_free(P1vals);
+    }
 
     nmod_poly_mat_t P2;
     nmod_poly_mat_init(P2, m, m, intbas->modulus);
     _pmintbasis_geometric_rec(P2, shift, R, n, r, zeta, d2, mod, G);
     for (slong idx = 0; idx < d2; idx++)
-        nmod_mat_clear(R + idx);
+    {
+        if (coeffs)
+            nmod_mat_window_clear(R + idx);
+        else
+            nmod_mat_clear(R + idx);
+    }
+    if (coeffs)
+        nmod_mat_clear(Rcat);
     flint_free(R);
 
     nmod_poly_mat_multiply(intbas, P2, P1);

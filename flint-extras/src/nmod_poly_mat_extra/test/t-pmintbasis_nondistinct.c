@@ -91,8 +91,9 @@ static int core_test(slong m, ulong prime, const nmod_mat_struct * E,
     int res = 1;
 
     /* (1) M-level and PM-level agree bit-for-bit, even under non-distinct
-       points (see header comment) */
-    if (!nmod_poly_mat_equal(intbas_m, intbas_pm))
+       points (see header comment), unless pmintbasis uses a Krylov leaf (the
+       shift-Popov basis); the shifted row degrees agree in any case */
+    if (!(d > 0 && _pmintbasis_uses_krylov(m, E[0].c, d)) && !nmod_poly_mat_equal(intbas_m, intbas_pm))
         res = 0;
     for (slong i = 0; i < m; i++)
         if (sh_m[i] != sh_pm[i])
