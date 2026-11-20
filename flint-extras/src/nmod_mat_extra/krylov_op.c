@@ -33,7 +33,6 @@ _nmod_mat_krylov_op_init_dense(_nmod_mat_krylov_op_t op, const nmod_mat_t M)
     op->predict = 1;
     op->nblocks = 0;
     op->eig = NULL;
-    op->eig_pre = NULL;
     op->off = NULL;
 }
 
@@ -135,7 +134,6 @@ _nmod_mat_krylov_op_init_jordan(_nmod_mat_krylov_op_t op, nn_srcptr eig,
     op->D = op->off[nblocks];
 
     op->eig = NULL;
-    op->eig_pre = NULL;
 
     if (eig != NULL && nblocks > 0)
     {
@@ -162,14 +160,6 @@ _nmod_mat_krylov_op_init_jordan(_nmod_mat_krylov_op_t op, nn_srcptr eig,
     }
 
     op->kind = all_one ? _NMOD_MAT_KRYLOV_DIAGONAL : _NMOD_MAT_KRYLOV_JORDAN;
-
-    /* Shoup's multiplication needs n < 2^(FLINT_BITS - 1) */
-    if (mod.n < (UWORD(1) << (FLINT_BITS - 1)))
-    {
-        op->eig_pre = _nmod_vec_init(nblocks);
-        for (b = 0; b < nblocks; b++)
-            op->eig_pre[b] = n_mulmod_precomp_shoup(op->eig[b], mod.n);
-    }
 }
 
 void
@@ -177,8 +167,6 @@ _nmod_mat_krylov_op_clear(_nmod_mat_krylov_op_t op)
 {
     if (op->eig != NULL)
         _nmod_vec_clear(op->eig);
-    if (op->eig_pre != NULL)
-        _nmod_vec_clear(op->eig_pre);
     if (op->off != NULL)
         flint_free(op->off);
 }
@@ -187,13 +175,13 @@ void
 _nmod_mat_krylov_op_apply_vec(nn_ptr out, nn_srcptr in,
         const _nmod_mat_krylov_op_t op)
 {
-    slong b, c, nb = op->nblocks;
+    slong b, nb = op->nblocks;
     const slong * off = op->off;
-    nmod_t mod = op->mod;
 
     switch (op->kind)
     {
         case _NMOD_MAT_KRYLOV_SHIFT:
+        case _NMOD_MAT_KRYLOV_JORDAN:
             /* within each block, shift the entries by one position:
                -> one shifted copy of the whole row, then the first entry of each
                block is set to zero (measured faster than one copy per block
@@ -202,49 +190,15 @@ _nmod_mat_krylov_op_apply_vec(nn_ptr out, nn_srcptr in,
                 memcpy(out + 1, in, (op->D - 1) * sizeof(ulong));
             for (b = 0; b < nb; b++)
                 out[off[b]] = 0;
+            /* Jordan: the block times its eigenvalue added */
+            if (op->kind == _NMOD_MAT_KRYLOV_JORDAN)
+                for (b = 0; b < nb; b++)
+                    _nmod_vec_scalar_addmul_nmod(out + off[b], in + off[b],
+                            off[b + 1] - off[b], op->eig[b], op->mod);
             break;
 
         case _NMOD_MAT_KRYLOV_DIAGONAL:
-            if (op->eig_pre != NULL)
-            {
-                for (c = 0; c < nb; c++)
-                    out[c] = n_mulmod_shoup(op->eig[c], in[c], op->eig_pre[c], mod.n);
-            }
-            else
-            {
-                for (c = 0; c < nb; c++)
-                    out[c] = nmod_mul(op->eig[c], in[c], mod);
-            }
-            break;
-
-        case _NMOD_MAT_KRYLOV_JORDAN:
-            for (b = 0; b < nb; b++)
-            {
-                slong o = off[b], t = off[b + 1] - off[b];
-                ulong x = op->eig[b];
-
-                if (x == 0)
-                {
-                    out[o] = 0;
-                    if (t > 1)
-                        memcpy(out + o + 1, in + o, (t - 1) * sizeof(ulong));
-                }
-                else if (op->eig_pre != NULL)
-                {
-                    ulong xp = op->eig_pre[b];
-                    out[o] = n_mulmod_shoup(x, in[o], xp, mod.n);
-                    for (c = 1; c < t; c++)
-                        out[o + c] = nmod_add(n_mulmod_shoup(x, in[o + c], xp, mod.n),
-                                              in[o + c - 1], mod);
-                }
-                else
-                {
-                    out[o] = nmod_mul(x, in[o], mod);
-                    for (c = 1; c < t; c++)
-                        out[o + c] = nmod_add(nmod_mul(x, in[o + c], mod),
-                                              in[o + c - 1], mod);
-                }
-            }
+            _nmod_vec_mul(out, op->eig, in, nb, op->mod);
             break;
 
         default:

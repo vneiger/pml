@@ -37,7 +37,9 @@ _rand_jordan(ulong * eig, slong * sizes, slong D, int kind,
             sz = 1;
         else
         {
-            slong lim = 1 + n_randint(state, 6);
+            /* now and then blocks of 16 entries or more, on which FLINT's
+               vector functions run their SIMD kernels */
+            slong lim = 1 + n_randint(state, n_randint(state, 4) ? 6 : 40);
             lim = FLINT_MIN(left, lim);
             sz = 1 + n_randint(state, lim);
         }
@@ -199,7 +201,7 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
         if (n_randint(state, 8) == 0)
         {
             m = n_randint(state, 30);
-            D = n_randint(state, 30);
+            D = n_randint(state, 40);
         }
 
         if (n_randint(state, 3) == 0)

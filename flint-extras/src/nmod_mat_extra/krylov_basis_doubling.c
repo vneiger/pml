@@ -22,7 +22,9 @@
     matrix itself, by repeated squaring. Jordan kinds: on the block b, of
     size D_b and eigenvalue x_b, the row v is multiplied by the polynomial
     h = (x_b + X)^(2^l) mod X^(D_b), in the sense v <- coefficients of
-    v(X) h(X) mod X^(D_b); h is computed by repeated squaring.
+    v(X) h(X) mod X^(D_b); h is computed by repeated squaring. Diagonal
+    kind (all blocks of size 1): the D values h = x_b^(2^l) in one vector,
+    so that squaring them and applying them are element-wise products.
 */
 typedef struct
 {
@@ -30,6 +32,7 @@ typedef struct
     slong q;                /* current exponent 2^l */
     nmod_mat_t Mp;          /* dense: M^q */
     nn_ptr * h;             /* Jordan: per block, h of length size */
+    nn_ptr hd;              /* diagonal: h of all blocks, length D */
 }
 _krylov_pow_struct;
 
@@ -41,10 +44,16 @@ _krylov_pow_init(_krylov_pow_struct * P, const _nmod_mat_krylov_op_struct * op)
     P->op = op;
     P->q = 1;
     P->h = NULL;
+    P->hd = NULL;
 
     if (op->kind == _NMOD_MAT_KRYLOV_DENSE)
     {
         nmod_mat_init_set(P->Mp, op->M);
+    }
+    else if (op->kind == _NMOD_MAT_KRYLOV_DIAGONAL)
+    {
+        P->hd = _nmod_vec_init(op->D);
+        _nmod_vec_set(P->hd, op->eig, op->D);
     }
     else if (op->kind != _NMOD_MAT_KRYLOV_SHIFT)
     {
@@ -68,6 +77,8 @@ _krylov_pow_clear(_krylov_pow_struct * P)
 
     if (P->op->kind == _NMOD_MAT_KRYLOV_DENSE)
         nmod_mat_clear(P->Mp);
+    else if (P->hd != NULL)
+        _nmod_vec_clear(P->hd);
     else if (P->h != NULL)
     {
         for (b = 0; b < P->op->nblocks; b++)
@@ -90,6 +101,10 @@ _krylov_pow_square(_krylov_pow_struct * P)
         nmod_mat_mul(T, P->Mp, P->Mp);
         nmod_mat_swap(T, P->Mp);
         nmod_mat_clear(T);
+    }
+    else if (P->hd != NULL)
+    {
+        _nmod_vec_mul(P->hd, P->hd, P->hd, op->D, op->mod);
     }
     else if (P->h != NULL)
     {
@@ -119,6 +134,14 @@ _krylov_pow_apply(nmod_mat_t Out, const nmod_mat_t In, const _krylov_pow_struct 
     if (op->kind == _NMOD_MAT_KRYLOV_DENSE)
     {
         nmod_mat_mul(Out, In, P->Mp);
+        return;
+    }
+
+    if (P->hd != NULL)
+    {
+        for (a = 0; a < In->r; a++)
+            _nmod_vec_mul(nmod_mat_entry_ptr(Out, a, 0),
+                          nmod_mat_entry_ptr(In, a, 0), P->hd, op->D, op->mod);
         return;
     }
 

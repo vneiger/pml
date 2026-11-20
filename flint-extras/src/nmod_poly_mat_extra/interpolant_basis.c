@@ -72,8 +72,8 @@ void _nmod_poly_mat_evaluate_mul_columns(nmod_mat_t R, const nmod_poly_mat_t P,
         {
             nn_ptr r = nmod_mat_entry_ptr(R, i, 0);
             nn_srcptr t = nmod_mat_entry_ptr(T, i, 0);
-            for (slong b = 0; b < c; b++)
-                r[b] = nmod_add(nmod_mul(r[b], pts[b], mod), t[b], mod);
+            _nmod_vec_mul(r, r, pts, c, mod);
+            _nmod_vec_add(r, r, t, c, mod);
         }
     }
     nmod_mat_clear(T);
