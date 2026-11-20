@@ -39,7 +39,6 @@ extern "C" {
 // - add/sub x**k * nmod_mat to nmod_poly_mat (for polynomial matrices, see
 //   nmod_poly_mat_add_shift_left and nmod_poly_mat_sub_shift_left in
 //   nmod_poly_mat_utils.h)
-// - left/right multiplication by a constant matrix
 
 /*------------------------------------------------------------*/
 /* multiplication by a constant matrix                        */
@@ -49,30 +48,25 @@ extern "C" {
  *  The following functions implement the multiplication of a polynomial matrix
  *  by a constant matrix. The dimensions are not checked to be compatible.
  *
- * \todo not yet implemented, at least two strategies:
- *   - rely on complete linearization as
- *   constant matrices. That is, expand 'a' as single (or several?) constant
- *   matrix 'cmat', and compute b*cmat, and retrieve back the entries in 'c'
- *   (preliminary work: compute cdeg(a))
- *   - or convert to matpoly, multiply, convert back
- *   -> what is faster should depend on the dimensions (for example, it is not
- *   the same story if the non-constant mat is square and if it is a single
- *   vector), so thresholds may be needed.
- *
+ *  Both linearize the polynomial matrix (see @ref Linearization) with orders
+ *  its column degree plus one (constant matrix on the left) or its row degree
+ *  plus one (constant matrix on the right), so that the product is one
+ *  constant matrix product: `k x m` by `m x D` on the left, `D x n` by `n x k`
+ *  on the right, where `D` is the sum of these orders.
  */
 //@{
 
-/** Computes `c = a*b` for a polynomial matrix `a` and a constant matrix `b`,
- * `c` may alias `a`
- * \todo not implemented yet
- */
-//void nmod_poly_mat_mul_right_nmod_mat(nmod_poly_mat_t & c, const nmod_poly_mat_t & a, const nmod_mat_t & b);
+/** Computes `c = a*b` for a polynomial matrix `a` and a constant matrix `b`;
+ * `c` may alias `a`. */
+void nmod_poly_mat_mul_right_nmod_mat(nmod_poly_mat_t c,
+                                      const nmod_poly_mat_t a,
+                                      const nmod_mat_t b);
 
-/** Computes `c = a*b` for a constant matrix `a` and a polynomial matrix `b`,
- * `c` may alias `b`
- * \todo not implemented yet
- */
-//void nmod_poly_mat_mul_left_nmod_mat(nmod_poly_mat_t & c, const nmod_mat_t & a, const nmod_poly_mat_t & b);
+/** Computes `c = a*b` for a constant matrix `a` and a polynomial matrix `b`;
+ * `c` may alias `b`. */
+void nmod_poly_mat_mul_left_nmod_mat(nmod_poly_mat_t c,
+                                     const nmod_mat_t a,
+                                     const nmod_poly_mat_t b);
 
 //@} // doxygen group: Multiplication by a constant matrix
 
