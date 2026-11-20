@@ -16,6 +16,7 @@
 #include <flint/nmod_poly.h>
 #include <flint/nmod_mat.h>
 #include <flint/nmod_poly_mat.h>
+#include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_relation_basis.h"
 #include "nmod_poly_mat_approximant.h"
 #include "nmod_poly_mat_interpolant.h"
@@ -35,7 +36,7 @@ void
 nmod_poly_mat_approximant_basis_krylov(nmod_poly_mat_t P,
         const nmod_poly_mat_t F, const slong * orders, const slong * shift)
 {
-    slong m = F->r, n = F->c, i, j, D, nb, off;
+    slong m = F->r, n = F->c, j, D, nb;
     slong * sizes;
     nmod_mat_t V;
 
@@ -52,24 +53,12 @@ nmod_poly_mat_approximant_basis_krylov(nmod_poly_mat_t P,
 
     sizes = flint_malloc((n + 1) * sizeof(slong));
     nmod_mat_init(V, m, D, nmod_poly_mat_modulus(F));
+    nmod_poly_mat_linearize_columns(V, F, orders);
 
     nb = 0;
-    off = 0;
     for (j = 0; j < n; j++)
-    {
-        if (orders[j] == 0)
-            continue;
-
-        for (i = 0; i < m; i++)
-        {
-            const nmod_poly_struct * f = nmod_poly_mat_entry(F, i, j);
-            _nmod_vec_set(nmod_mat_entry_ptr(V, i, off), f->coeffs,
-                          FLINT_MIN(f->length, orders[j]));
-        }
-
-        sizes[nb++] = orders[j];
-        off += orders[j];
-    }
+        if (orders[j] > 0)
+            sizes[nb++] = orders[j];
 
     if (!nmod_poly_mat_krylov_kernel_basis_jordan(P, V, NULL, sizes, nb,
                                                   shift, NULL))

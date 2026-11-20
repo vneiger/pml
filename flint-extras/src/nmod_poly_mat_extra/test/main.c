@@ -20,6 +20,7 @@
 #include "t-hermite_normal_form.c"
 #include "t-inv_series.c"
 #include "t-kernel.c"
+#include "t-linearize.c"
 #include "t-linsolve_geometric.c"
 #include "t-linsolve_via_kernel.c"
 #include "t-linsolve_via_series.c"
@@ -63,6 +64,7 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_hnf_diagonal),
     TEST_FUNCTION(nmod_poly_mat_inv_series),
     TEST_FUNCTION(nmod_poly_mat_kernel),
+    TEST_FUNCTION(nmod_poly_mat_linearize),
     TEST_FUNCTION(nmod_poly_mat_linsolve_geometric),
     TEST_FUNCTION(nmod_poly_mat_linsolve_via_kernel),
     TEST_FUNCTION(nmod_poly_mat_linsolve_via_series),

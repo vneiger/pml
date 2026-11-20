@@ -739,6 +739,77 @@ nmod_poly_mat_set_from_mat_poly(nmod_poly_mat_t pmat,
 
 //@} // doxygen group: Conversion from constant matrix and matrix polynomial
 
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* LINEARIZATION                                              */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/** @name Linearization by blocks of columns or rows
+ * \anchor Linearization
+ *
+ * Let `pmat` be an `m x n` polynomial matrix.
+ *
+ * Columns. Let `orders` be an array of `n` nonnegative integers `d_b =
+ * orders[b]`, and let `D = d_0 + ... + d_{n-1}` and `D_b = d_0 + ... +
+ * d_{b-1}`. The column linearization of `pmat` with respect to `orders` is the
+ * `m x D` constant matrix `cmat` whose block of columns `D_b, ..., D_b + d_b -
+ * 1` holds the coefficients of degree `0, ..., d_b - 1` of column `b` of
+ * `pmat`: `cmat[i, D_b + k]` is the coefficient of degree `k` of `pmat[i, b]`,
+ * for `0 <= i < m` and `0 <= k < d_b`.
+ *
+ * Rows. Likewise, with `orders` an array of `m` nonnegative integers `d_a =
+ * orders[a]`, `D = d_0 + ... + d_{m-1}` and `D_a = d_0 + ... + d_{a-1}`, the
+ * row linearization of `pmat` is the `D x n` constant matrix `cmat` such that
+ * `cmat[D_a + k, j]` is the coefficient of degree `k` of `pmat[a, j]`, for
+ * `0 <= k < d_a` and `0 <= j < n`.
+ *
+ * In both cases, coefficients of degree `d_b` (resp. `d_a`) or more are
+ * ignored, missing ones are zero, and a zero order gives an empty block. The
+ * `polynomialize` functions are the inverses: column `b` (resp. row `a`) of
+ * the polynomial matrix they compute has degree less than `d_b` (resp. `d_a`).
+ *
+ * Products by a constant matrix: for a constant matrix `A` with `m` columns,
+ * the column linearization of `A * pmat` is `A * cmat`; for a constant matrix
+ * `B` with `n` rows, the row linearization of `pmat * B` is `cmat * B` (see
+ * ::nmod_poly_mat_mul_left_nmod_mat and ::nmod_poly_mat_mul_right_nmod_mat).
+ *
+ * The orders are assumed to be nonnegative, and `cmat` to have the dimensions
+ * above (not checked). Either matrix may be a window.
+ */
+//@{
+
+/** Sets `cmat` to the column linearization of `pmat` with respect to
+ * `orders`, of length `pmat->c` (see @ref Linearization). All entries of
+ * `cmat` are written: it needs no zero initialization. */
+void nmod_poly_mat_linearize_columns(nmod_mat_t cmat,
+                                     const nmod_poly_mat_t pmat,
+                                     const slong * orders);
+
+/** Inverse of ::nmod_poly_mat_linearize_columns: sets `pmat` to the
+ * polynomial matrix whose entry `(i, b)` is the sum of `cmat[i, D_b + k] x^k`
+ * for `0 <= k < d_b` (see @ref Linearization). */
+void nmod_poly_mat_polynomialize_columns(nmod_poly_mat_t pmat,
+                                         const nmod_mat_t cmat,
+                                         const slong * orders);
+
+/** Sets `cmat` to the row linearization of `pmat` with respect to `orders`,
+ * of length `pmat->r` (see @ref Linearization). All entries of `cmat` are
+ * written: it needs no zero initialization. */
+void nmod_poly_mat_linearize_rows(nmod_mat_t cmat,
+                                  const nmod_poly_mat_t pmat,
+                                  const slong * orders);
+
+/** Inverse of ::nmod_poly_mat_linearize_rows: sets `pmat` to the polynomial
+ * matrix whose entry `(a, j)` is the sum of `cmat[D_a + k, j] x^k` for `0 <= k
+ * < d_a` (see @ref Linearization). */
+void nmod_poly_mat_polynomialize_rows(nmod_poly_mat_t pmat,
+                                      const nmod_mat_t cmat,
+                                      const slong * orders);
+
+//@} // doxygen group: Linearization by blocks of columns or rows
+
 #ifdef __cplusplus
 }
 #endif
