@@ -14,6 +14,7 @@
 
 #include "t-charpoly_lnz_block_krylov.c"
 #include "t-krylov_basis.c"
+#include "t-rand.c"
 #include "t-rref_rows.c"
 
 /* Array of test functions ***************************************************/
@@ -22,6 +23,7 @@ test_struct tests[] =
 {
     TEST_FUNCTION(nmod_mat_charpoly_lnz_block_krylov),
     TEST_FUNCTION(nmod_mat_krylov_basis),
+    TEST_FUNCTION(nmod_mat_rand),
     TEST_FUNCTION(nmod_mat_rref_rows),
 };
 

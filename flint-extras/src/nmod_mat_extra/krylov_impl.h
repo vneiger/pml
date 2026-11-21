@@ -66,7 +66,6 @@ typedef struct
                                    (max(1, f_i) only), 2 always (tests) */
     slong nblocks;              /* Jordan kinds: number of blocks */
     nn_ptr eig;                 /* eigenvalues (reduced), NULL for SHIFT */
-    nn_ptr eig_pre;             /* Shoup precomputations, or NULL */
     slong * off;                /* block offsets, nblocks + 1 entries */
 }
 _nmod_mat_krylov_op_struct;

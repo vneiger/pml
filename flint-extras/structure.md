@@ -52,7 +52,6 @@ no implementation yet
 
 - nmod_mat_extra   (AVX flags TO DO)
   creating random matrices with particular properties
-  row and column rotations
   matrix multiplication with AVX (small modulus)  (TO BE CLEANED + AVX CHECKS)
   PLUQ (uses AVX2 but from things already incorporated in FLINT: should compile as such, to be checked)
   left nullspace
