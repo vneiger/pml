@@ -96,9 +96,10 @@ void _nmod_poly_mat_pmintbasis_krylov_leaf(nmod_poly_mat_t P,
     vpts = _nmod_vec_init(n * d + 1);
     for (slong k = 0; k < d; k++)
     {
-        for (slong i = 0; i < m; i++)
-            _nmod_vec_set(nmod_mat_entry_ptr(V, i, k * n),
-                          nmod_mat_entry_ptr(E + k, i, 0), n);
+        nmod_mat_t Vk;
+        nmod_mat_window_init(Vk, V, 0, k * n, m, (k + 1) * n);
+        nmod_mat_set(Vk, E + k);
+        nmod_mat_window_clear(Vk);
         for (slong j = 0; j < n; j++)
             vpts[k * n + j] = pts[k];
     }

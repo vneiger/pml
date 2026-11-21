@@ -20,14 +20,17 @@
 #include "t-hermite_normal_form.c"
 #include "t-inv_series.c"
 #include "t-kernel.c"
+#include "t-linearize.c"
 #include "t-linsolve_geometric.c"
 #include "t-linsolve_via_kernel.c"
 #include "t-linsolve_via_series.c"
 #include "t-degree_det_bound.c"
 #include "t-degree_sum.c"
+#include "t-expand.c"
 #include "t-mul_sd_fft_direct.c"
 #include "t-mul_sd_fft_matmul.c"
 #include "t-mul_geometric.c"
+#include "t-mul_nmod_mat.c"
 #include "t-mul_vandermonde.c"
 #include "t-mul_waksman.c"
 #include "t-mulmid.c"
@@ -63,15 +66,18 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_hnf_diagonal),
     TEST_FUNCTION(nmod_poly_mat_inv_series),
     TEST_FUNCTION(nmod_poly_mat_kernel),
+    TEST_FUNCTION(nmod_poly_mat_linearize),
     TEST_FUNCTION(nmod_poly_mat_linsolve_geometric),
     TEST_FUNCTION(nmod_poly_mat_linsolve_via_kernel),
     TEST_FUNCTION(nmod_poly_mat_linsolve_via_series),
     TEST_FUNCTION(nmod_poly_mat_degree_det_bound),
     TEST_FUNCTION(nmod_poly_mat_degree_sum),
+    TEST_FUNCTION(nmod_poly_mat_expand),
     TEST_FUNCTION(nmod_poly_mat_mbasis),
     TEST_FUNCTION(nmod_poly_mat_mul_sd_fft_direct),
     TEST_FUNCTION(nmod_poly_mat_mul_sd_fft_matmul),
     TEST_FUNCTION(nmod_poly_mat_mul_geometric),
+    TEST_FUNCTION(nmod_poly_mat_mul_nmod_mat),
     TEST_FUNCTION(nmod_poly_mat_mul_waksman),
     TEST_FUNCTION(nmod_poly_mat_mul_vandermonde),
     TEST_FUNCTION(nmod_poly_mat_mulmid),
