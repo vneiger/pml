@@ -810,6 +810,77 @@ void nmod_poly_mat_polynomialize_rows(nmod_poly_mat_t pmat,
 
 //@} // doxygen group: Linearization by blocks of columns or rows
 
+/** @name Expansion in x^d-adic form by blocks of columns or rows
+ * \anchor Expansion
+ *
+ * This is the analogue of the linearization (see @ref Linearization) where
+ * the pieces are polynomials of degree less than `d` instead of constants;
+ * `d = 1` gives the linearization, with constant polynomials as entries.
+ *
+ * Let `pmat` be an `m x n` polynomial matrix and `d` a positive integer.
+ *
+ * Columns. Let `orders` be an array of `n` nonnegative integers, and let
+ * `e_b = ceil(orders[b] / d)`, `E = e_0 + ... + e_{n-1}` and `E_b = e_0 +
+ * ... + e_{b-1}`. The x^d-adic expansion of `pmat` by blocks of columns with
+ * respect to `orders` is the `m x E` polynomial matrix `epmat` such that
+ * `epmat[i, E_b + k] = (pmat[i, b] div x^{k d}) mod x^{min(d, orders[b] - k
+ * d)}`, for `0 <= i < m` and `0 <= k < e_b`; thus `pmat[i, b] mod
+ * x^{orders[b]}` is the sum of the `epmat[i, E_b + k] x^{k d}` for `0 <= k <
+ * e_b`.
+ *
+ * Rows. Likewise, with `orders` an array of `m` nonnegative integers, `e_a =
+ * ceil(orders[a] / d)`, `E = e_0 + ... + e_{m-1}` and `E_a = e_0 + ... +
+ * e_{a-1}`, the expansion by blocks of rows is the `E x n` polynomial matrix
+ * `epmat` such that `epmat[E_a + k, j] = (pmat[a, j] div x^{k d}) mod x^{min(d,
+ * orders[a] - k d)}`, for `0 <= k < e_a` and `0 <= j < n`.
+ *
+ * The `compress` functions go back: they set `pmat[i, b]` to the sum of the
+ * `epmat[i, E_b + k] x^{k d}` for `0 <= k < e_b` (resp. `pmat[a, j]` to the sum
+ * of the `epmat[E_a + k, j] x^{k d}`), without truncation. The entries of
+ * `epmat` may have degree `d` or more, the overlapping parts being added. For
+ * example, if column `b` of `pmat` has degree less than `orders[b]` for each
+ * `b` and `epmat` is its expansion by blocks of columns, then compressing `A *
+ * epmat` gives `A * pmat`, for any polynomial matrix `A` with `m` columns
+ * (likewise, by blocks of rows, compressing `epmat * B` gives `pmat * B`).
+ *
+ * The orders are assumed to be nonnegative, `d` positive, and `epmat` to have
+ * the dimensions above (not checked). `epmat` must not alias `pmat`; either
+ * may be a window.
+ */
+//@{
+
+/** Sets `epmat` to the x^d-adic expansion of `pmat` by blocks of columns,
+ * with respect to `orders`, of length `pmat->c` (see @ref Expansion). */
+void nmod_poly_mat_expand_columns(nmod_poly_mat_t epmat,
+                                  const nmod_poly_mat_t pmat,
+                                  const slong * orders,
+                                  slong d);
+
+/** Sets `pmat[i, b]` to the sum of the `epmat[i, E_b + k] x^{k d}` for `0 <= k
+ * < e_b` (see @ref Expansion): the inverse of
+ * ::nmod_poly_mat_expand_columns on its outputs. */
+void nmod_poly_mat_compress_columns(nmod_poly_mat_t pmat,
+                                    const nmod_poly_mat_t epmat,
+                                    const slong * orders,
+                                    slong d);
+
+/** Sets `epmat` to the x^d-adic expansion of `pmat` by blocks of rows, with
+ * respect to `orders`, of length `pmat->r` (see @ref Expansion). */
+void nmod_poly_mat_expand_rows(nmod_poly_mat_t epmat,
+                               const nmod_poly_mat_t pmat,
+                               const slong * orders,
+                               slong d);
+
+/** Sets `pmat[a, j]` to the sum of the `epmat[E_a + k, j] x^{k d}` for `0 <= k
+ * < e_a` (see @ref Expansion): the inverse of ::nmod_poly_mat_expand_rows on
+ * its outputs. */
+void nmod_poly_mat_compress_rows(nmod_poly_mat_t pmat,
+                                 const nmod_poly_mat_t epmat,
+                                 const slong * orders,
+                                 slong d);
+
+//@} // doxygen group: Expansion in x^d-adic form by blocks of columns or rows
+
 #ifdef __cplusplus
 }
 #endif

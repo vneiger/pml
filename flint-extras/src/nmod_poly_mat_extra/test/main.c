@@ -26,6 +26,7 @@
 #include "t-linsolve_via_series.c"
 #include "t-degree_det_bound.c"
 #include "t-degree_sum.c"
+#include "t-expand.c"
 #include "t-mul_sd_fft_direct.c"
 #include "t-mul_sd_fft_matmul.c"
 #include "t-mul_geometric.c"
@@ -71,6 +72,7 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_linsolve_via_series),
     TEST_FUNCTION(nmod_poly_mat_degree_det_bound),
     TEST_FUNCTION(nmod_poly_mat_degree_sum),
+    TEST_FUNCTION(nmod_poly_mat_expand),
     TEST_FUNCTION(nmod_poly_mat_mbasis),
     TEST_FUNCTION(nmod_poly_mat_mul_sd_fft_direct),
     TEST_FUNCTION(nmod_poly_mat_mul_sd_fft_matmul),
