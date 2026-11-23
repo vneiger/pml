@@ -105,8 +105,6 @@
 #ifndef NMOD_POLY_MAT_INTERPOLANT_H
 #define NMOD_POLY_MAT_INTERPOLANT_H
 
-#define PMINTBASIS_THRES 32
-
 #include <flint/nmod_types.h>
 #include <flint/nmod_poly_mat.h>
 
@@ -229,7 +227,8 @@ void nmod_poly_mat_mintbasis(nmod_poly_mat_t intbas,
 
 /** Computes a `shift`-ordered weak Popov interpolant basis for `(E,pts)`
  * using the algorithm PM-IntBasis (see @ref pmintbasis). Falls back to
- * @ref nmod_poly_mat_mintbasis once `d <= PMINTBASIS_THRES`. */
+ * @ref nmod_poly_mat_mintbasis for few points (a threshold depending on the
+ * dimensions, see nmod_poly_mat_extra/impl.h). */
 void nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
                               slong * shift,
                               const ulong * pts,

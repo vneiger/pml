@@ -86,7 +86,8 @@ _nmod_poly_mat_interpolant_basis(nmod_poly_mat_t P, slong * shift,
             dpts[k] = pts[start[k]];
         }
 
-        _nmod_poly_mat_pmintbasis(P, shift, dpts, E, ndist, prm->leaf_cutoff);
+        _nmod_poly_mat_pmintbasis(P, shift, dpts, E, ndist, _nmod_poly_mat_relation_basis_leaf_cutoff(prm, m),
+                                  _nmod_poly_mat_pmintbasis_threshold(m, E[0].c, P->modulus));
 
         for (slong k = 0; k < ndist; k++)
             nmod_mat_window_clear(E + k);

@@ -14,6 +14,7 @@
 
 #include "nmod_poly_mat_approximant.h"
 #include "nmod_poly_mat_io.h"
+#include "nmod_poly_mat_extra/impl.h"  /* for _nmod_poly_mat_pmbasis */
 
 #include "testing_collection.h"
 
@@ -59,6 +60,38 @@ int core_test_pmbasis(nmod_poly_mat_t mat, slong order, slong * shift)
             printf("\n");
             return 0;
         }
+    }
+
+    /* the recursion with a small threshold: without Krylov leaf, the same
+       output as mbasis (the same row operations); with the Krylov leaf, an
+       approximant basis with the same shifted row degree */
+    if (res && order > 0)
+    {
+        const slong thres = 4 + order % 13;
+        slong sh_m[rdim], sh_r[rdim];
+        nmod_poly_mat_t app_m, app_r;
+        nmod_poly_mat_init(app_m, rdim, rdim, mat->modulus);
+        nmod_poly_mat_init(app_r, rdim, rdim, mat->modulus);
+        for (slong i = 0; i < rdim; i++)
+            sh_m[i] = sh_r[i] = shift[i];
+        nmod_poly_mat_mbasis(app_m, sh_m, mat, order);
+        _nmod_poly_mat_pmbasis(app_r, sh_r, mat, order, 0.0, thres);
+        if (!nmod_poly_mat_equal(app_m, app_r))
+            res = 0;
+        for (slong i = 0; i < rdim; i++)
+        {
+            if (sh_r[i] != sh_m[i] || cshift[i] != sh_m[i])
+                res = 0;
+            sh_r[i] = shift[i];
+        }
+        _nmod_poly_mat_pmbasis(app_r, sh_r, mat, order, NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF, thres);
+        for (slong i = 0; i < rdim; i++)
+            if (sh_r[i] != sh_m[i])
+                res = 0;
+        if (res && !nmod_poly_mat_is_approximant_basis(app_r, mat, order, shift, ROW_LOWER))
+            res = 0;
+        nmod_poly_mat_clear(app_m);
+        nmod_poly_mat_clear(app_r);
     }
 
     nmod_poly_mat_clear(appbas);

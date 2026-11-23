@@ -86,12 +86,14 @@ _nmod_poly_mat_approximant_basis(nmod_poly_mat_t P, slong * shift,
     if (dmin == dmax)
     {
         if (nact == n)
-            _nmod_poly_mat_pmbasis(P, shift, F, dmax, prm->leaf_cutoff);
+            _nmod_poly_mat_pmbasis(P, shift, F, dmax, _nmod_poly_mat_relation_basis_leaf_cutoff(prm, m),
+                                   _nmod_poly_mat_pmbasis_threshold(m, nact, F->modulus));
         else
         {
             nmod_poly_mat_t view;
             _nmod_poly_mat_view_init_submatrix(view, F, NULL, m, act, nact);
-            _nmod_poly_mat_pmbasis(P, shift, view, dmax, prm->leaf_cutoff);
+            _nmod_poly_mat_pmbasis(P, shift, view, dmax, _nmod_poly_mat_relation_basis_leaf_cutoff(prm, m),
+                                   _nmod_poly_mat_pmbasis_threshold(m, nact, F->modulus));
             _nmod_poly_mat_view_clear(view);
         }
         flint_free(act);
@@ -122,7 +124,8 @@ _nmod_poly_mat_approximant_basis(nmod_poly_mat_t P, slong * shift,
                 nmod_poly_shift_left(g, g, dmax - orders[b]);
             }
         }
-        _nmod_poly_mat_pmbasis(P, shift, G, dmax, prm->leaf_cutoff);
+        _nmod_poly_mat_pmbasis(P, shift, G, dmax, _nmod_poly_mat_relation_basis_leaf_cutoff(prm, m),
+                               _nmod_poly_mat_pmbasis_threshold(m, nact, F->modulus));
         nmod_poly_mat_clear(G);
         flint_free(act);
         return;

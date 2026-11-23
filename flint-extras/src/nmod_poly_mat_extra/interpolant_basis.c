@@ -19,21 +19,7 @@
 #include "nmod_poly_mat_utils.h"
 #include "impl.h"
 
-/** nmod_mat_poly_mintbasis takes E as a plain, flat array of at 
- *     least `d` already-initialized nmod_mat_t's (nmod_mat_struct *)*/ 
-void nmod_poly_mat_mintbasis(nmod_poly_mat_t intbas,
-                             slong * shift,
-                             const ulong * pts,
-                             const nmod_mat_struct * E,
-                             slong d)
-{
-    const slong m = intbas->r;
-    nmod_mat_poly_t intbasmp;
-    nmod_mat_poly_init(intbasmp, m, m, intbas->modulus);
-    nmod_mat_poly_mintbasis(intbasmp, shift, pts, E, d);
-    nmod_poly_mat_set_from_mat_poly(intbas, intbasmp);
-    nmod_mat_poly_clear(intbasmp);
-}
+/* nmod_poly_mat_mintbasis: see nmod_mat_poly_extra/nmod_mat_poly_mintbasis.c */
 
 
 
@@ -117,7 +103,9 @@ void nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
                               slong d)
 {
     _nmod_poly_mat_pmintbasis(intbas, shift, pts, E, d,
-                              NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF);
+                              _nmod_poly_mat_pmbasis_krylov_cutoff(intbas->r),
+                              (d > 0) ? _nmod_poly_mat_pmintbasis_threshold(intbas->r, E[0].c,
+                                                                            intbas->modulus) : 0);
 }
 
 void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
@@ -125,7 +113,8 @@ void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
                                const ulong * pts,
                                const nmod_mat_struct * E,
                                slong d,
-                               double krylov_cutoff)
+                               double krylov_cutoff,
+                               slong thres)
 {
     /* Krylov leaf: replaces the subtree below this node */
     if (d > 0 && _nmod_poly_mat_krylov_wanted(intbas->r, E[0].c, E[0].c * d, krylov_cutoff))
@@ -134,7 +123,7 @@ void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
         return;
     }
 
-    if (d <= PMINTBASIS_THRES)
+    if (d <= thres)
     {
         nmod_poly_mat_mintbasis(intbas, shift, pts, E, d);
         return;
@@ -150,7 +139,7 @@ void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
        than d1, extra entries simply unused. */
     nmod_poly_mat_t P1;
     nmod_poly_mat_init(P1, m, m, intbas->modulus);
-    _nmod_poly_mat_pmintbasis(P1, shift, pts, E, d1, krylov_cutoff);
+    _nmod_poly_mat_pmintbasis(P1, shift, pts, E, d1, krylov_cutoff, thres);
 
     /* R_i = P1(pts[d1+i]) * E_{d1+i}, i = 0..d2-1 -- unlike pmbasis's
        residual (a middle product), these are d2 evaluate-then-multiply
@@ -207,7 +196,7 @@ void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
 
     nmod_poly_mat_t P2;
     nmod_poly_mat_init(P2, m, m, intbas->modulus);
-    _nmod_poly_mat_pmintbasis(P2, shift, pts + d1, R, d2, krylov_cutoff);
+    _nmod_poly_mat_pmintbasis(P2, shift, pts + d1, R, d2, krylov_cutoff, thres);
     for (slong idx = 0; idx < d2; idx++)
     {
         if (coeffs)

@@ -158,8 +158,8 @@ int _nmod_mat_det_solve_lu(ulong * c, nmod_mat_t X, nmod_mat_t A, const nmod_mat
  * Krylov is chosen when
  *     n < m   and   D <= c m / n^(1/3),
  * with two values of the cutoff c:
- * - NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF, inside pmbasis and pmintbasis (one
- *   order d, D = n d): the test is made at each node of the recursion, so
+ * - _nmod_poly_mat_pmbasis_krylov_cutoff(m), inside pmbasis and pmintbasis
+ *   (one order d, D = n d): the test is made at each node of the recursion, so
  *   that Krylov replaces the whole subtree below the first node where it
  *   holds;
  * - NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_CUTOFF, in the divide and conquer
@@ -185,9 +185,30 @@ int _nmod_mat_det_solve_lu(ulong * c, nmod_mat_t X, nmod_mat_t A, const nmod_mat
  * down to 0.61x, pmbasis 64 x 16 at d = 8 down to 0.72x, all below 2 ms),
  * but n < m/4 would lose more than it saves (at n = m/4 the leaf is 1.07 to
  * 1.52 times faster on average over all orders). */
+/* TODO draft measurement notes:
+ * With the rewritten mbasis and mintbasis (2026-11, mbkit tune, m = 2 to 64,
+ * 31 and 60 bits; Zen 4, Comet Lake, Apple M4, Emerald Rapids VM), the leaf
+ * of pmbasis and pmintbasis loses for small m: no leaf for m <= 4, c = 3 for
+ * 4 < m < 64 and c = 6 from m = 64 on (the value above, measured up to
+ * m = 256) are within 1.5% to 2.6% of the better choice on average on each
+ * machine and for pmbasis, pmintbasis, pmintbasis_geometric, against 5% to
+ * 13% for c = 6 everywhere. */
 #ifndef NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF
 # define NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF 6.0
 #endif
+#ifndef NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF_MEDIUM
+# define NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF_MEDIUM 3.0
+#endif
+
+/* the cutoff of the Krylov leaf of pmbasis and pmintbasis for m rows */
+static inline double
+_nmod_poly_mat_pmbasis_krylov_cutoff(slong m)
+{
+    if (m <= 4)
+        return 0.0;
+    return (m < 64) ? NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF_MEDIUM
+                    : NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF;
+}
 
 #ifndef NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_CUTOFF
 # define NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_CUTOFF 8.0
@@ -289,17 +310,70 @@ _nmod_poly_mat_evaluate_mul_columns_wanted_geometric(slong m, slong n,
     return (double) n * n * n * y * y <= c * c * (double) m * (double) m;
 }
 
-/* pmbasis and pmintbasis with the Krylov cutoff as a parameter
- * (krylov_cutoff = 0: no Krylov leaf); nmod_poly_mat_pmbasis and
- * nmod_poly_mat_pmintbasis use NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF. For
- * profiling and tests. */
+/* The order up to which pmbasis calls mbasis directly (its base case), for
+ * an m x n input modulo `modulus`; the base cases then have orders from
+ * about half of it. With the mbasis that stores the rows as vectors of
+ * coefficients, the base case pays off up to about 512 conditions n*order:
+ * the threshold is 512/n, at least 32 (it was 32), except 512 for n = 1 and
+ * 192 for n = 2. Measured on a Xeon (Emerald Rapids) VM, with the Krylov
+ * leaf off, m = 2 to 64, n = 1 to 3m/4, orders 128 to 2500, moduli of 31
+ * and 60 bits: 1.04 times the time with the best threshold among 16 to 512
+ * on average, at most 1.45 (32: 1.58 on average, at most 3.7). Provisional,
+ * to be measured on other machines; the best value also grows with the
+ * modulus (384/n at 31 bits, 768/n at 60 bits). */
+static inline slong
+_nmod_poly_mat_pmbasis_threshold(slong m, slong n, ulong modulus)
+{
+    (void) m;
+    (void) modulus;
+    if (n <= 2)
+        return (n <= 1) ? 512 : 192;
+    return FLINT_MAX(32, 512 / n);
+}
+
+/* The number of points up to which pmintbasis calls mintbasis directly, for
+ * m x n matrices E_k modulo `modulus`: 1024/n, at least 32 and at most 512,
+ * except 128 for m <= 2 and 256 for m = 3 (same measurements as above: 1.04
+ * times the best threshold on average, at most 1.6; 32: 1.59 on average, at
+ * most 4.0). Provisional. */
+static inline slong
+_nmod_poly_mat_pmintbasis_threshold(slong m, slong n, ulong modulus)
+{
+    (void) modulus;
+    if (m <= 3)
+        return (m <= 2) ? 128 : 256;
+    return FLINT_MAX(32, FLINT_MIN(512, 1024 / FLINT_MAX(n, 1)));
+}
+
+/* The same for pmintbasis_geometric, whose recursion costs less (the
+ * residual by evaluation at geometric points): the threshold of pmbasis,
+ * and at most 128 for m <= 4 (same measurements: 1.04 times the best
+ * threshold on average, at most 1.35; 32: 1.46 on average, at most 3.8).
+ * Provisional. */
+static inline slong
+_nmod_poly_mat_pmintbasis_geometric_threshold(slong m, slong n, ulong modulus)
+{
+    const slong t = _nmod_poly_mat_pmbasis_threshold(m, n, modulus);
+    return (m <= 4) ? FLINT_MIN(t, 128) : t;
+}
+
+/* pmbasis, pmintbasis and pmintbasis_geometric with the Krylov cutoff
+ * (krylov_cutoff = 0: no Krylov leaf) and the threshold of the base case as
+ * parameters; nmod_poly_mat_pmbasis, nmod_poly_mat_pmintbasis and
+ * nmod_poly_mat_pmintbasis_geometric use _nmod_poly_mat_pmbasis_krylov_cutoff
+ * and the thresholds above. For profiling, tuning and tests. */
 void _nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas, slong * shift,
                             const nmod_poly_mat_t pmat, slong order,
-                            double krylov_cutoff);
+                            double krylov_cutoff, slong thres);
 
 void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas, slong * shift,
                                const ulong * pts, const nmod_mat_struct * E,
-                               slong d, double krylov_cutoff);
+                               slong d, double krylov_cutoff, slong thres);
+
+void _nmod_poly_mat_pmintbasis_geometric(nmod_poly_mat_t intbas, slong * shift,
+                                         ulong * pts, const nmod_mat_struct * E,
+                                         ulong r, slong d,
+                                         double krylov_cutoff, slong thres);
 
 /* Divide and conquer for orders per column (approximant_basis_general.c)
  * and for one point per column (interpolant_basis_general.c), behind
@@ -326,7 +400,8 @@ void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas, slong * shift,
 
 typedef struct
 {
-    double leaf_cutoff;    /* cutoff of the Krylov leaf of pmbasis, pmintbasis */
+    double leaf_cutoff;    /* cutoff of the Krylov leaf of pmbasis, pmintbasis;
+                            * negative: _nmod_poly_mat_pmbasis_krylov_cutoff(m) */
     double direct_cutoff;  /* cutoff of the direct Krylov calls */
     double order_slack;    /* close orders, see above (approximants) */
     int split;             /* approximants: 0 to cut at a quasi-uniform order
@@ -344,10 +419,18 @@ typedef _nmod_poly_mat_relation_basis_dac_params_struct
 static inline void
 _nmod_poly_mat_relation_basis_dac_params_init(_nmod_poly_mat_relation_basis_dac_params_t prm)
 {
-    prm->leaf_cutoff = NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF;
+    prm->leaf_cutoff = -1.0;
     prm->direct_cutoff = NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_CUTOFF;
     prm->order_slack = NMOD_POLY_MAT_APPROXIMANT_BASIS_ORDER_SLACK;
     prm->split = 0;
+}
+
+/* the cutoff of the Krylov leaf for m rows given by prm */
+static inline double
+_nmod_poly_mat_relation_basis_leaf_cutoff(const _nmod_poly_mat_relation_basis_dac_params_t prm,
+                                          slong m)
+{
+    return (prm->leaf_cutoff < 0.0) ? _nmod_poly_mat_pmbasis_krylov_cutoff(m) : prm->leaf_cutoff;
 }
 
 /* shift-ordered weak Popov approximant basis of F at order orders[j] for

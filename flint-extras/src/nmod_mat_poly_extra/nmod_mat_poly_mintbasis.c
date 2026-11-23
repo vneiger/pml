@@ -10,482 +10,407 @@
     <https://www.gnu.org/licenses/>.
 */
 
-#include <stdlib.h>
+#include <flint/nmod.h>
 #include <flint/nmod_vec.h>
 #include <flint/nmod_mat.h>
-#include <flint/perm.h>
+#include <flint/nmod_poly.h>
+#include <flint/nmod_poly_mat.h>
 #include "nmod_mat_poly.h"
-#include "nmod_mat_extra.h"
+#include "nmod_poly_mat_interpolant.h"
 #include "nmod_mat_poly_extra/impl.h"
 
-/* pair used for a stable sort of row indices by shift value. */
+/*
+    Storage, as in mbasis (nmod_mat_poly_mbasis.c): the rows of the
+    interpolant basis are stored as vectors of coefficients, row i of the
+    matrix W being [coefficient 0 of row i of intbas | coefficient 1 | ...],
+    with m entries per coefficient. W has room for cap coefficients, a bound
+    on the length of intbas which is increased when needed (initially, about
+    the length for generic input with uniform shift, n*d/m + 1). In the
+    "resupdate" variant, the residuals R_j = intbas(pts[j]) E_j at the points
+    j not processed yet are stored in the m x (n d) matrix R, whose row i is
+    [row i of R_0 | row i of R_1 | ...]. Then, at the iteration for the point
+    pts[k]:
+
+    - in the "rescomp" variant, the residual intbas(pts[k]) E_k is computed
+      from the evaluation of intbas at pts[k], one vector-matrix product per
+      row (the powers of pts[k] times the coefficients of the row), and one
+      product by E_k; for n = 1, it is directly one matrix-vector product, of
+      the coefficients of intbas by the powers of pts[k] times E_k;
+
+    - the update of the basis (and of the residuals at the points j > k) by
+      the left nullspace of the residual is a single product X * (pivot rows),
+      over all the coefficients at once, instead of one product per
+      coefficient of intbas, plus a matrix addition each time;
+
+    - the pivot rows are multiplied by x - pts[k] from a copy of them, and
+      their residuals at the points j > k by pts[j] - pts[k], entrywise;
+
+    - there is no row permutation of intbas (or of the residuals).
+
+    The row operations are the same as those of the previous implementation
+    (on nmod_mat_poly_t, with permutations of the rows), in the same order, so
+    the output (intbas and shift) is the same, and the two variants give the
+    same output.
+*/
+
 typedef struct
 {
-    slong value;
-    slong index;
-} slong_pair;
+    slong m;            /* rows of the E_k */
+    slong n;            /* columns of the E_k */
+    slong d;            /* number of points */
+    nmod_t mod;
+    int resupd;         /* variant: residuals updated, or recomputed */
+    nmod_mat_t W;       /* m x (cap m): the rows of intbas */
+    slong cap;          /* capacity of W in coefficients, at most d + 1 */
+    slong len;          /* length of intbas */
+    nmod_mat_t R;       /* (resupd) m x (n d): the residuals at the points */
+}
+_mintbasis_struct;
 
-static int _slong_pair_compare(const void * a, const void * b)
+typedef _mintbasis_struct _mintbasis_t[1];
+
+/* W starts as the identity, R as [E_0 | ... | E_{d-1}] */
+static void
+_mintbasis_init(_mintbasis_t S, slong m, slong n, slong d,
+                const nmod_mat_struct * E, nmod_t mod, int resupd)
 {
-    slong_pair aa = *(const slong_pair *) a;
-    slong_pair bb = *(const slong_pair *) b;
-    if (aa.value == bb.value)
-        return (aa.index < bb.index) ? -1 : (aa.index > bb.index ? 1 : 0);
-    return (aa.value < bb.value) ? -1 : 1;
+    S->m = m;
+    S->n = n;
+    S->d = d;
+    S->mod = mod;
+    S->resupd = resupd;
+    S->cap = FLINT_MIN(d + 1, (n * d + m - 1) / m + 2);
+    nmod_mat_init(S->W, m, S->cap * m, mod.n);
+    for (slong i = 0; i < m; i++)
+        nmod_mat_entry(S->W, i, i) = 1;
+    S->len = 1;
+    nmod_mat_init(S->R, resupd ? m : 0, resupd ? n * d : 0, mod.n);
+    if (resupd)
+        for (slong k = 0; k < d; k++)
+            for (slong i = 0; i < m; i++)
+                _nmod_vec_set(nmod_mat_entry_ptr(S->R, i, k * n),
+                              nmod_mat_entry_ptr(E + k, i, 0), n);
 }
 
-/* perm := stable permutation making shift[perm[0]] <= ... <= shift[perm[m-1]] */
-static void _shift_sort_permutation(slong * perm,
-                                    const slong * shift,
-                                    slong m,
-                                    slong_pair * tmp)
+static void
+_mintbasis_clear(_mintbasis_t S)
 {
+    nmod_mat_clear(S->W);
+    nmod_mat_clear(S->R);
+}
+
+/* row i of intbas: coefficient e is at offset e*m */
+static inline ulong *
+_mintbasis_row(_mintbasis_t S, slong i)
+{
+    return nmod_mat_entry_ptr(S->W, i, 0);
+}
+
+/* The iterations of mintbasis: on input, S holds the identity (and the
+   residuals); on output, intbas (and S->len); shift is updated. */
+static void
+_mintbasis_run(_mintbasis_t S, slong * shift, const ulong * pts,
+               const nmod_mat_struct * E, slong lowrank)
+{
+    const slong m = S->m, n = S->n, d = S->d;
+    const int resupd = S->resupd;
+    const nmod_t mod = S->mod;
+    slong len = S->len;
+
+    /* T: the pivot rows (rank <= min(m, n)), U: the combinations of them
+       added to the other rows (allocated when needed: not for rank <=
+       lowrank); their columns: the coefficients of intbas, and the residuals
+       (resupd); ev: (rescomp, n > 1) intbas(pts[k]) */
+    nmod_mat_t res, K, X, Wv, ev, T, U, Tw, Uw;
+    nmod_mat_init(res, m, n, mod.n);
+    nmod_mat_init(K, m, m, mod.n);
+    nmod_mat_init(ev, (resupd || n == 1) ? 0 : m, m, mod.n);
+    nmod_mat_init(T, FLINT_MIN(m, n), S->cap * m + S->R->c, mod.n);
+    nmod_mat_init(U, 0, 0, mod.n);
+
+    /* perm: rows sorted by shift; rows: the pivot rows of the residual, then
+       the others; P, Q: scratch for the PLE decomposition */
+    slong * perm = (slong *) flint_malloc((3 * m + n) * sizeof(slong));
+    slong * rows = perm + m;
+    slong * P = rows + m;
+    slong * Q = P + m;
+    /* pw: (rescomp) powers of the point, and for n = 1 the column E_k times
+       them (q); F: the factors pts[j] - pts[k] of the residuals of the pivot
+       rows (resupdate) */
+    nn_ptr pw = _nmod_vec_init(d + 1);
+    nn_ptr q = (resupd || n > 1) ? NULL : _nmod_vec_init((d + 1) * m);
+    nn_ptr v = _nmod_vec_init(m);
+    nn_ptr F = _nmod_vec_init(FLINT_MAX(n * d, 1));
     for (slong i = 0; i < m; i++)
+        perm[i] = i;
+
+    for (slong k = 0; k < d; k++)
     {
-        tmp[i].value = shift[i];
-        tmp[i].index = i;
-    }
-    qsort(tmp, m, sizeof(slong_pair), _slong_pair_compare);
-    for (slong i = 0; i < m; i++)
-        perm[i] = tmp[i].index;
-}
+        const ulong pt = pts[k];
 
-/* mintbasis, low-rank fold helper: bottom += nsbas * top, done as explicit
- * rank-1 updates instead of a generic nmod_mat_mul into a temporary buffer
- * followed by nmod_mat_add. Here
- * `rank = top->r = m-nullity`, which is generically `n` (the original 
- * problem's own column count, since nullity=m-n generically) -- so this
- * helps exactly when `n` is small relative to `m`.
- *
- *  THRES=4 is a crossover found by preliminary measurements
- *  TODO investigate this.  */
-#ifndef NMOD_MAT_POLY_MINTBASIS_LOWRANK_THRES
-#define NMOD_MAT_POLY_MINTBASIS_LOWRANK_THRES 4
-#endif
-
-static void _mintbasis_low_rank_addmul(nmod_mat_t bottom, const nmod_mat_t nsbas, const nmod_mat_t top)
-{
-    slong rank = top->r;
-    slong nullity = bottom->r;
-    slong c = bottom->c;
-    for (slong k = 0; k < rank; k++)
-        for (slong i = 0; i < nullity; i++)
+        /* Here intbas is an s-ordered weak Popov interpolant basis for the
+           points 0..k-1, where s is the input shift, and shift =
+           rdeg_s(intbas). The residual: intbas(pts[k]) E_k, with its rows
+           sorted by shift (stable sort, giving priority to the smaller
+           shifts). */
+        _nmod_mat_poly_shift_perm(perm, shift, m);
+        if (resupd)
         {
-            ulong coeff = nmod_mat_entry(nsbas, i, k);
-            if (coeff)
-                _nmod_vec_scalar_addmul_nmod(nmod_mat_entry_ptr(bottom, i, 0),
-                                             nmod_mat_entry_ptr(top, k, 0),
-                                             c, coeff, bottom->mod);
+            for (slong i = 0; i < m; i++)
+                _nmod_vec_set(nmod_mat_entry_ptr(res, i, 0),
+                              nmod_mat_entry_ptr(S->R, perm[i], k * n), n);
         }
+        else
+        {
+            pw[0] = 1;
+            for (slong t = 1; t < len; t++)
+                pw[t] = nmod_mul(pw[t - 1], pt, mod);
+            if (n == 1)
+            {
+                /* q = [pw[0] E_k | pw[1] E_k | ...], then (coefficients of
+                   intbas) * q, with inner dimension len*m */
+                for (slong i = 0; i < m; i++)
+                    q[i] = nmod_mat_entry(E + k, i, 0);
+                for (slong t = 1; t < len; t++)
+                    _nmod_vec_scalar_mul_nmod(q + t * m, q, m, pw[t], mod);
+                nmod_mat_window_init(Wv, S->W, 0, 0, m, len * m);
+                nmod_mat_mul_nmod_vec(v, Wv, q, len * m);
+                nmod_mat_window_clear(Wv);
+                for (slong i = 0; i < m; i++)
+                    nmod_mat_entry(res, i, 0) = v[perm[i]];
+            }
+            else
+            {
+                /* row i of ev: pw times the coefficients of the row perm[i]
+                   of intbas, seen as a len x m matrix (a view, as in
+                   nmod_mat_poly_coeff_attach) */
+                nmod_mat_struct B[1];
+                B->r = len;
+                B->c = m;
+                B->stride = m;
+                B->mod = mod;
+                for (slong i = 0; i < m; i++)
+                {
+                    B->entries = _mintbasis_row(S, perm[i]);
+                    nmod_mat_nmod_vec_mul(nmod_mat_entry_ptr(ev, i, 0), pw, len, B);
+                }
+                nmod_mat_mul(res, ev, E + k);
+            }
+        }
+
+        const slong rank = _nmod_mat_poly_left_nullspace_compact(X, rows, res, K, P, Q);
+        const slong nullity = m - rank;
+
+        if (nullity == m)
+        {
+            /* zero residual: nothing to do for this point */
+            nmod_mat_window_clear(X);
+            continue;
+        }
+
+        /* rows[0..rank): the pivot rows, rows[rank..m): the others, as row
+           indices of intbas; the shifts of the pivot rows increase by 1 */
+        for (slong i = 0; i < m; i++)
+            rows[i] = perm[rows[i]];
+        for (slong j = 0; j < rank; j++)
+            shift[rows[j]] += 1;
+
+        /* room for the multiplication of the pivot rows by x - pts[k] */
+        _nmod_mat_poly_basis_reserve(S->W, &S->cap, len, len + 1, d + 1);
+        _nmod_mat_poly_scratch_fit(T, T->r, S->cap * m + S->R->c);
+
+        /* gather the pivot rows into T: intbas part (ca entries), and the
+           residuals at the points k+1, ..., d-1 (cr entries) */
+        const slong ca = len * m;
+        const slong cr = resupd ? (d - 1 - k) * n : 0;
+        const slong tc = ca + cr;
+        for (slong j = 0; j < rank; j++)
+        {
+            ulong * t = nmod_mat_entry_ptr(T, j, 0);
+            _nmod_vec_set(t, _mintbasis_row(S, rows[j]), ca);
+            if (cr > 0)
+                _nmod_vec_set(t + ca, nmod_mat_entry_ptr(S->R, rows[j], (k + 1) * n), cr);
+        }
+
+        /* the other rows: row rows[rank+k] += sum_j X[k][j] * row rows[j]
+           (the residual at pts[k] becomes zero and is not used anymore) */
+        if (nullity > 0 && rank <= lowrank)
+        {
+            for (slong i = 0; i < nullity; i++)
+            {
+                ulong * r = _mintbasis_row(S, rows[rank + i]);
+                for (slong j = 0; j < rank; j++)
+                {
+                    const ulong c = nmod_mat_entry(X, i, j);
+                    const ulong * t = nmod_mat_entry_ptr(T, j, 0);
+                    if (c == 0)
+                        continue;
+                    _nmod_vec_scalar_addmul_nmod(r, t, ca, c, mod);
+                    if (cr > 0)
+                        _nmod_vec_scalar_addmul_nmod(nmod_mat_entry_ptr(S->R, rows[rank + i], (k + 1) * n),
+                                                     t + ca, cr, c, mod);
+                }
+            }
+        }
+        else if (nullity > 0)
+        {
+            _nmod_mat_poly_scratch_fit(U, m - 1 - lowrank, S->cap * m + S->R->c);
+            nmod_mat_window_init(Tw, T, 0, 0, rank, tc);
+            nmod_mat_window_init(Uw, U, 0, 0, nullity, tc);
+            nmod_mat_mul(Uw, X, Tw);
+            for (slong i = 0; i < nullity; i++)
+            {
+                ulong * r = _mintbasis_row(S, rows[rank + i]);
+                const ulong * u = nmod_mat_entry_ptr(U, i, 0);
+                _nmod_vec_add(r, r, u, ca, mod);
+                if (cr > 0)
+                {
+                    ulong * rr = nmod_mat_entry_ptr(S->R, rows[rank + i], (k + 1) * n);
+                    _nmod_vec_add(rr, rr, u + ca, cr, mod);
+                }
+            }
+            nmod_mat_window_clear(Tw);
+            nmod_mat_window_clear(Uw);
+        }
+        nmod_mat_window_clear(X);
+
+        /* the pivot rows are multiplied by x - pts[k]: the length of intbas
+           increases if one of them has degree len-1; their residuals at the
+           points pts[j], j > k, are multiplied by pts[j] - pts[k] */
+        int grow = 0;
+        for (slong j = 0; j < rank && !grow; j++)
+            grow = !_nmod_vec_is_zero(nmod_mat_entry_ptr(T, j, (len - 1) * m), m);
+        if (cr > 0)
+        {
+            for (slong j = k + 1; j < d; j++)
+            {
+                const ulong f = nmod_sub(pts[j], pt, mod);
+                for (slong c = 0; c < n; c++)
+                    F[(j - k - 1) * n + c] = f;
+            }
+        }
+        const ulong neg_pt = nmod_neg(pt, mod);
+        for (slong j = 0; j < rank; j++)
+        {
+            ulong * r = _mintbasis_row(S, rows[j]);
+            const ulong * t = nmod_mat_entry_ptr(T, j, 0);
+            _nmod_vec_zero(r, m);
+            _nmod_vec_set(r + m, t, ca);
+            _nmod_vec_scalar_addmul_nmod(r, t, ca, neg_pt, mod);
+            if (cr > 0)
+                _nmod_vec_mul(nmod_mat_entry_ptr(S->R, rows[j], (k + 1) * n), t + ca, F, cr, mod);
+        }
+        len += grow;
+    }
+
+    S->len = len;
+    flint_free(perm);
+    _nmod_vec_clear(pw);
+    if (q != NULL)
+        _nmod_vec_clear(q);
+    _nmod_vec_clear(v);
+    _nmod_vec_clear(F);
+    nmod_mat_clear(res);
+    nmod_mat_clear(K);
+    nmod_mat_clear(ev);
+    nmod_mat_clear(T);
+    nmod_mat_clear(U);
 }
 
-/* mintbasis, "rescomp" variant: at each iteration, recompute the residual
- * from scratch via a full Horner evaluation of the current `intbas` at
- * `pts[k]`, then multiply by E_k. See
- * nmod_mat_poly_mintbasis_resupdate below for the residual-maintenance
- * variant, and nmod_mat_poly_mintbasis (bottom of this file) for the
- * dispatcher between them. */
+void
+_nmod_mat_poly_mintbasis(nmod_mat_poly_t intbas, slong * shift,
+                         const ulong * pts, const nmod_mat_struct * E, slong d,
+                         int resupd, slong lowrank)
+{
+    const slong m = intbas->r;
+    _mintbasis_t S;
+
+    nmod_mat_poly_one(intbas);
+    if (d <= 0)
+        return;
+
+    _mintbasis_init(S, m, E[0].c, d, E, intbas->mod, resupd);
+    _mintbasis_run(S, shift, pts, E, lowrank);
+
+    nmod_mat_poly_fit_length(intbas, S->len);
+    _nmod_mat_poly_set_length(intbas, S->len);
+    for (slong e = 0; e < S->len; e++)
+        for (slong i = 0; i < m; i++)
+            _nmod_vec_set(nmod_mat_poly_entry_ptr(intbas, e, i, 0),
+                          _mintbasis_row(S, i) + e * m, m);
+    _mintbasis_clear(S);
+}
+
 void nmod_mat_poly_mintbasis_rescomp(nmod_mat_poly_t intbas,
                                      slong * shift,
                                      const ulong * pts,
                                      const nmod_mat_struct * E,
                                      slong d)
 {
-    const slong m = intbas->r;
-
-    nmod_mat_poly_one(intbas);
-
-    if (d == 0)
-        return;
-
-    const slong n = E[0].c;
-
-    nmod_mat_t evalP;
-    nmod_mat_t res;
-    nmod_mat_init(evalP, m, m, intbas->mod.n);
-    nmod_mat_init(res, m, n, intbas->mod.n);
-
-    slong * perm = _perm_init(m);
-    slong_pair * tmp = (slong_pair *) flint_malloc(m * sizeof(slong_pair));
-    slong * pivots = (slong *) flint_malloc(m * sizeof(slong));
-    /* scratch space for the PLE decomposition of the residual */
-    slong * ple_P = (slong *) flint_malloc(m * sizeof(slong));
-    slong * ple_Q = (slong *) flint_malloc(n * sizeof(slong));
-    nmod_mat_t nsbas;
-    /* trivial valid init before the loop, so the unconditional
-       nmod_mat_clear at the end is always well-defined,
-       d == 0 case, and  nullity==m branch. TO SEE.*/
-    nmod_mat_init(nsbas, 0, 0, intbas->mod.n);
-
-    for (slong k = 0; k < d; k++)
-    {
-        nmod_mat_poly_evaluate_nmod(evalP, intbas, pts[k]);
-        nmod_mat_mul(res, evalP, E + k);
-
-        _shift_sort_permutation(perm, shift, m, tmp);
-        nmod_mat_permute_rows(res, perm, NULL);
-
-        /* left nullspace of the (permuted) residual, compact form, from its
-           PLE decomposition (overwrites res; see nmod_mat_poly_extra/impl.h) */
-        nmod_mat_clear(nsbas);
-        slong nullity = _nmod_mat_left_nullspace_compact_ple(nsbas, pivots, res, ple_P, ple_Q);
-
-        if (nullity == m)
-            /* res already zero (in the permuted world): intbas already
-               satisfies this point's condition, nothing to update */
-            continue;
-
-        /* pivots[i] currently indexes rows of the permuted intbas;
-           translate to original row indices */
-        _perm_compose(pivots, perm, pivots, m);
-
-        /* the first m-nullity (translated) indices are the rows that will
-           be shifted by (X - pts[k]) below: bump their shifted degree now,
-           before `pivots` is permuted again */
-        for (slong i = 0; i < m - nullity; i++)
-            shift[pivots[i]] += 1;
-
-        nmod_mat_poly_permute_rows(intbas, pivots, NULL);
-
-        /* fold: last `nullity` rows <- nsbas * (first m-nullity rows) + themselves.
-           Dispatches to explicit rank-1 updates when the inner dimension
-           (m-nullity, generically = n) is small -- see
-           _mintbasis_low_rank_addmul's own doc comments */ 
-        if (m - nullity <= NMOD_MAT_POLY_MINTBASIS_LOWRANK_THRES)
-        {
-            nmod_mat_t win_mul, win_add, int_coeff;
-            for (slong deg = 0; deg < intbas->length; deg++)
-            {
-                nmod_mat_poly_coeff_attach(int_coeff, intbas, deg);
-                nmod_mat_window_init(win_mul, int_coeff, 0, 0, m - nullity, m);
-                nmod_mat_window_init(win_add, int_coeff, m - nullity, 0, m, m);
-                _mintbasis_low_rank_addmul(win_add, nsbas, win_mul);
-                nmod_mat_window_clear(win_mul);
-                nmod_mat_window_clear(win_add);
-            }
-        }
-        else
-        {
-            nmod_mat_t ns_app, win_mul, win_add, int_coeff;
-            nmod_mat_init(ns_app, nullity, intbas->c, intbas->mod.n);
-            for (slong deg = 0; deg < intbas->length; deg++)
-            {
-                nmod_mat_poly_coeff_attach(int_coeff, intbas, deg);
-                nmod_mat_window_init(win_mul, int_coeff, 0, 0, m - nullity, m);
-                nmod_mat_window_init(win_add, int_coeff, m - nullity, 0, m, m);
-                nmod_mat_mul(ns_app, nsbas, win_mul);
-                nmod_mat_add(win_add, win_add, ns_app);
-                nmod_mat_window_clear(win_mul);
-                nmod_mat_window_clear(win_add);
-            }
-            nmod_mat_clear(ns_app);
-        }
-
-       /* Multiply the first m-nullity rows by (X - pts[k]) (not plain X).
-           Recentering Q via y = x - pts[k] (Q_x(x) = Q_y(x - pts[k])):
-           a row with Q_y = X*e_i becomes Q_x = (X -
-           pts[k])*e_i, i.e. new_row = (X-pts[k])*old_row = X*old_row -
-           pts[k]*old_row, giving new_c[deg] = old_c[deg-1] -
-           pts[k]*old_c[deg]. Grow length first if any of those rows
-           currently has a nonzero top coefficient. */
-        for (slong i = 0; i < m - nullity; i++)
-            if (!_nmod_vec_is_zero(nmod_mat_poly_entry_ptr(intbas, intbas->length - 1, i, 0), m))
-            {
-                nmod_mat_poly_fit_length(intbas, intbas->length + 1);
-                _nmod_mat_poly_set_length(intbas, intbas->length + 1);
-                break;
-            }
-        /** Recentering uses _nmod_vec_scalar_mul_nmod (dispatches to a 
-         * Shoup-precomputed multiply internally) + _nmod_vec_add instead 
-         * of a manual per-entry nmod_mul/nmod_sub loop. */
-        {
-            ulong neg_pt = nmod_neg(pts[k], intbas->mod);
-            for (slong deg = intbas->length - 1; deg > 0; deg--)
-                for (slong i = 0; i < m - nullity; i++)
-                {
-                    ulong * dst = nmod_mat_poly_entry_ptr(intbas, deg, i, 0);
-                    ulong * prev = nmod_mat_poly_entry_ptr(intbas, deg - 1, i, 0);
-                    _nmod_vec_scalar_mul_nmod(dst, dst, m, neg_pt, intbas->mod);
-                    _nmod_vec_add(dst, dst, prev, m, intbas->mod);
-                }
-            for (slong i = 0; i < m - nullity; i++)
-            {
-                ulong * dst = nmod_mat_poly_entry_ptr(intbas, 0, i, 0);
-                _nmod_vec_scalar_mul_nmod(dst, dst, m, neg_pt, intbas->mod);
-            }
-        }
-
-        _perm_inv(pivots, pivots, m);
-        nmod_mat_poly_permute_rows(intbas, pivots, NULL);
-    }
-
-    nmod_mat_clear(evalP);
-    nmod_mat_clear(res);
-    _perm_clear(perm);
-    flint_free(tmp);
-    flint_free(pivots);
-    flint_free(ple_P);
-    flint_free(ple_Q);
-    nmod_mat_clear(nsbas);
+    _nmod_mat_poly_mintbasis(intbas, shift, pts, E, d, 0,
+                             _nmod_mat_poly_basis_lowrank(intbas->mod));
 }
 
-/* mintbasis, "resupdate" variant: instead of recomputing the residual
- * `intbas(pts[k])*E_k` from scratch via a full Horner evaluation at every
- * iteration, maintain the vector of future residual values
- *   Res[j] = intbas(pts[j]) * E_j,   j = k..d-1
- * updating it via the same elementary row operations applied to `intbas`
- * at each iteration, instead of recomputing it.
- *
- * Validity: intbas_new(x) = M_k(x) * intbas_old(x), where M_k is the
- * (permuted-frame) elementary factor [[X-pts[k], 0], [nsbas, Id]] applied
- * this iteration. For any point y, intbas_new(y) = M_k(y) * intbas_old(y),
- * so Res[j]_new = intbas_new(pts[j])*E_j = M_k(pts[j]) * intbas_old(pts[j])
- * * E_j = M_k(pts[j]) * Res[j]_old -- i.e. Res[j] can be updated directly
- * by applying M_k AT pts[j], without ever re-evaluating intbas.
- *
- * Applying M_k(pts[j]) to Res[j] decomposes into exactly the same two
- * pieces as the polynomial-level update on `intbas` itself:
- *   - fold: bottom `nullity` rows of Res[j] += nsbas * top (m-nullity)
- *     rows of Res[j] -- identical fold applied to intbas's own
- *     coefficients, just on an m x n object (E's width) instead of m x m
- *     (intbas's own width) -- this narrower width is exactly where the
- *     saving comes from, mirroring mbasis_resupdate's own n-vs-m
- *     advantage.
- *   - "X-pts[k]" recentering: for intbas itself (a genuine polynomial)
- *     this needs the shift+rescale combine used in the rescomp version
- *     above. For Res[j] (a value at the fixed point pts[j], not a
- *     polynomial), the analogous transformation is simply a scalar
- *     multiply by (pts[j]-pts[k]) on the top m-nullity rows -- no
- *     coefficient-array bookkeeping needed at all, since evaluating
- *     "(X-pts[k])*old_row" AT pts[j] is just old_row(pts[j])*(pts[j]-
- *     pts[k]).
- *
- *  mintbasis's "X-pts[k]" recentering step on every live
- * Res[j] is a genuine scalar multiply on every entry of the top m-nullity
- * rows, for every remaining j, at every iteration -- an O(d^2*m*n)-ish
- * cost. That extra cost means this
- * variant is not generically cheaper the way mbasis's resupdate is.
- *
- * Rescomp pays one extra real matrix product
- * (`nmod_mat_mul(res, evalP, E->coeffs+k)`) every iteration that resupdate
- * never pays (it reads the already-maintained Res[k] directly); this
- * saving dominates when `d` is small relative to `rdim` and/or `nullity =
- * rdim-cdim` (generically `rdim-cdim`) is small -- the closer to square
- * (cdim near rdim) and the fewer points relative to rdim, the more this
- * saving outweighs resupdate's own extra recentering cost. The win is
- * strongest and scales with `rdim`.  See
- * nmod_mat_poly_mintbasis below for the dispatch condition measurements
- * led to. */
 void nmod_mat_poly_mintbasis_resupdate(nmod_mat_poly_t intbas,
                                        slong * shift,
                                        const ulong * pts,
                                        const nmod_mat_struct * E,
                                        slong d)
 {
-    const slong m = intbas->r;
-
-    nmod_mat_poly_one(intbas);
-
-    if (d == 0)
-        return;
-
-    /* n dropped as a parameter -- see nmod_mat_poly_mintbasis_rescomp's
-       own comment above for the rationale (identical here). */
-    const slong n = E[0].c;
-
-    /* Res[k] = intbas(pts[k])*E_k; initially intbas=Id so Res[k] = E_k. */
-    nmod_mat_struct * Res = (nmod_mat_struct *) flint_malloc(d * sizeof(nmod_mat_struct));
-    for (slong k = 0; k < d; k++)
-    {
-        nmod_mat_init(Res + k, m, n, intbas->mod.n);
-        nmod_mat_set(Res + k, E + k);
-    }
-
-    nmod_mat_t res;
-    nmod_mat_init(res, m, n, intbas->mod.n);
-
-    slong * perm = _perm_init(m);
-    slong_pair * tmp = (slong_pair *) flint_malloc(m * sizeof(slong_pair));
-    slong * pivots = (slong *) flint_malloc(m * sizeof(slong));
-    /* scratch space for the PLE decomposition of the residual */
-    slong * ple_P = (slong *) flint_malloc(m * sizeof(slong));
-    slong * ple_Q = (slong *) flint_malloc(n * sizeof(slong));
-    nmod_mat_t nsbas;
-    nmod_mat_init(nsbas, 0, 0, intbas->mod.n);
-
-    for (slong k = 0; k < d; k++)
-    {
-        nmod_mat_set(res, Res + k);
-        _shift_sort_permutation(perm, shift, m, tmp);
-        nmod_mat_permute_rows(res, perm, NULL);
-
-        /* left nullspace of the (permuted) residual, compact form, from its
-           PLE decomposition (overwrites res; see nmod_mat_poly_extra/impl.h) */
-        nmod_mat_clear(nsbas);
-        slong nullity = _nmod_mat_left_nullspace_compact_ple(nsbas, pivots, res, ple_P, ple_Q);
-
-        if (nullity == m)
-            continue;
-
-        _perm_compose(pivots, perm, pivots, m);
-        for (slong i = 0; i < m - nullity; i++)
-            shift[pivots[i]] += 1;
-
-        nmod_mat_poly_permute_rows(intbas, pivots, NULL);
-        for (slong j = k + 1; j < d; j++)
-            nmod_mat_permute_rows(Res + j, pivots, NULL);
-
-        /* fold: bottom nullity rows += nsbas * top (m-nullity) rows --
-           applied to intbas (all coefficient degrees) and to the LIVE
-           residuals Res[k+1..d-1] (Res[k] is dead after this iteration).
-           Dispatches to explicit rank-1 updates below the same threshold
-           as the rescomp variant above. */
-        nmod_mat_t win_mul, win_add, int_coeff;
-        if (m - nullity <= NMOD_MAT_POLY_MINTBASIS_LOWRANK_THRES)
-        {
-            for (slong deg = 0; deg < intbas->length; deg++)
-            {
-                nmod_mat_poly_coeff_attach(int_coeff, intbas, deg);
-                nmod_mat_window_init(win_mul, int_coeff, 0, 0, m - nullity, m);
-                nmod_mat_window_init(win_add, int_coeff, m - nullity, 0, m, m);
-                _mintbasis_low_rank_addmul(win_add, nsbas, win_mul);
-                nmod_mat_window_clear(win_mul);
-                nmod_mat_window_clear(win_add);
-            }
-            for (slong j = k + 1; j < d; j++)
-            {
-                nmod_mat_window_init(win_mul, Res + j, 0, 0, m - nullity, n);
-                nmod_mat_window_init(win_add, Res + j, m - nullity, 0, m, n);
-                _mintbasis_low_rank_addmul(win_add, nsbas, win_mul);
-                nmod_mat_window_clear(win_mul);
-                nmod_mat_window_clear(win_add);
-            }
-        }
-        else
-        {
-            nmod_mat_t ns_app;
-            nmod_mat_init(ns_app, nullity, m, intbas->mod.n);
-            for (slong deg = 0; deg < intbas->length; deg++)
-            {
-                nmod_mat_poly_coeff_attach(int_coeff, intbas, deg);
-                nmod_mat_window_init(win_mul, int_coeff, 0, 0, m - nullity, m);
-                nmod_mat_window_init(win_add, int_coeff, m - nullity, 0, m, m);
-                nmod_mat_mul(ns_app, nsbas, win_mul);
-                nmod_mat_add(win_add, win_add, ns_app);
-                nmod_mat_window_clear(win_mul);
-                nmod_mat_window_clear(win_add);
-            }
-            nmod_mat_clear(ns_app);
-
-            nmod_mat_t ns_res;
-            nmod_mat_init(ns_res, nullity, n, intbas->mod.n);
-            for (slong j = k + 1; j < d; j++)
-            {
-                nmod_mat_window_init(win_mul, Res + j, 0, 0, m - nullity, n);
-                nmod_mat_window_init(win_add, Res + j, m - nullity, 0, m, n);
-                nmod_mat_mul(ns_res, nsbas, win_mul);
-                nmod_mat_add(win_add, win_add, ns_res);
-                nmod_mat_window_clear(win_mul);
-                nmod_mat_window_clear(win_add);
-            }
-            nmod_mat_clear(ns_res);
-        }
-
-        /* X-pts[k] recentering of intbas's own top m-nullity rows --
-           identical to the rescomp version (genuine polynomial
-           coefficients); see its own doc comment for the vectorized
-           _nmod_vec_scalar_mul_nmod + _nmod_vec_add rewrite.  */
-        for (slong i = 0; i < m - nullity; i++)
-            if (!_nmod_vec_is_zero(nmod_mat_poly_entry_ptr(intbas, intbas->length - 1, i, 0), m))
-            {
-                nmod_mat_poly_fit_length(intbas, intbas->length + 1);
-                _nmod_mat_poly_set_length(intbas, intbas->length + 1);
-                break;
-            }
-        {
-            ulong neg_pt = nmod_neg(pts[k], intbas->mod);
-            for (slong deg = intbas->length - 1; deg > 0; deg--)
-                for (slong i = 0; i < m - nullity; i++)
-                {
-                    ulong * dst = nmod_mat_poly_entry_ptr(intbas, deg, i, 0);
-                    ulong * prev = nmod_mat_poly_entry_ptr(intbas, deg - 1, i, 0);
-                    _nmod_vec_scalar_mul_nmod(dst, dst, m, neg_pt, intbas->mod);
-                    _nmod_vec_add(dst, dst, prev, m, intbas->mod);
-                }
-            for (slong i = 0; i < m - nullity; i++)
-            {
-                ulong * dst = nmod_mat_poly_entry_ptr(intbas, 0, i, 0);
-                _nmod_vec_scalar_mul_nmod(dst, dst, m, neg_pt, intbas->mod);
-            }
-        }
-
-        /* top m-nullity rows of the LIVE residuals: scalar multiply by
-           (pts[j]-pts[k]) -- see derivation above */
-        for (slong j = k + 1; j < d; j++)
-        {
-            ulong factor = nmod_sub(pts[j], pts[k], intbas->mod);
-            for (slong i = 0; i < m - nullity; i++)
-                for (slong col = 0; col < n; col++)
-                    nmod_mat_entry(Res + j, i, col) =
-                        nmod_mul(factor, nmod_mat_entry(Res + j, i, col), intbas->mod);
-        }
-
-        _perm_inv(pivots, pivots, m);
-        nmod_mat_poly_permute_rows(intbas, pivots, NULL);
-        for (slong j = k + 1; j < d; j++)
-            nmod_mat_permute_rows(Res + j, pivots, NULL);
-    }
-
-    for (slong k = 0; k < d; k++)
-        nmod_mat_clear(Res + k);
-    flint_free(Res);
-    nmod_mat_clear(res);
-    _perm_clear(perm);
-    flint_free(tmp);
-    flint_free(pivots);
-    flint_free(ple_P);
-    flint_free(ple_Q);
-    nmod_mat_clear(nsbas);
+    _nmod_mat_poly_mintbasis(intbas, shift, pts, E, d, 1,
+                             _nmod_mat_poly_basis_lowrank(intbas->mod));
 }
 
-/** Main `mintbasis` function: chooses between
- * @ref nmod_mat_poly_mintbasis_rescomp and
- * @ref nmod_mat_poly_mintbasis_resupdate depending on the shape of `E`
- * and the number of points `d` s.t. `d <= (actual length of pts)` and 
- * `d <= (actual length of E)`.
- * 
- * Both variants always agree bit-for-bit, so this dispatch is a pure
- * timing decision, never a correctness one.
- *
- * The condition here, `d*(m-n+1) <= m`, was found by measurement
- * over a grid of `(m,n,d)`.
- * 
- * \todo investigate for a better dispatcher.  */
 void nmod_mat_poly_mintbasis(nmod_mat_poly_t intbas,
                              slong * shift,
                              const ulong * pts,
                              const nmod_mat_struct * E,
                              slong d)
 {
-    /* d=0: both variants return the identity with no other side effect
-       (checked first thing in each, before reading E), so
-       there is nothing to dispatch on and E is never dereferenced --
-       matches the established "E is never dereferenced when d=0"
-       convention (see e.g. interpolant_basis_geometric_auto.c). */
-    if (d == 0)
+    /* d = 0: E is never read */
+    _nmod_mat_poly_mintbasis(intbas, shift, pts, E, d,
+                             (d > 0) && _nmod_mat_poly_mintbasis_resupdate_wanted(intbas->r, E[0].c, d,
+                                                                                  NMOD_BITS(intbas->mod)),
+                             _nmod_mat_poly_basis_lowrank(intbas->mod));
+}
+
+/* Same computation, writing intbas directly, without conversion from
+   nmod_mat_poly. */
+void nmod_poly_mat_mintbasis(nmod_poly_mat_t intbas,
+                             slong * shift,
+                             const ulong * pts,
+                             const nmod_mat_struct * E,
+                             slong d)
+{
+    const slong m = intbas->r;
+    nmod_t mod;
+    _mintbasis_t S;
+
+    if (d <= 0)
     {
-        nmod_mat_poly_one(intbas);
+        nmod_poly_mat_one(intbas);
         return;
     }
 
-    const slong m = intbas->r;
-    const slong n = E[0].c;
+    nmod_init(&mod, intbas->modulus);
+    _mintbasis_init(S, m, E[0].c, d, E, mod,
+                    _nmod_mat_poly_mintbasis_resupdate_wanted(m, E[0].c, d, NMOD_BITS(mod)));
+    _mintbasis_run(S, shift, pts, E, _nmod_mat_poly_basis_lowrank(mod));
 
-    if (d * (m - n + 1) <= m)
-        nmod_mat_poly_mintbasis_resupdate(intbas, shift, pts, E, d);
-    else
-        nmod_mat_poly_mintbasis_rescomp(intbas, shift, pts, E, d);
+    for (slong i = 0; i < m; i++)
+    {
+        const ulong * r = _mintbasis_row(S, i);
+        for (slong j = 0; j < m; j++)
+        {
+            nmod_poly_struct * f = nmod_poly_mat_entry(intbas, i, j);
+            nmod_poly_fit_length(f, S->len);
+            for (slong e = 0; e < S->len; e++)
+                f->coeffs[e] = r[e * m + j];
+            _nmod_poly_set_length(f, S->len);
+            _nmod_poly_normalise(f);
+        }
+    }
+    _mintbasis_clear(S);
 }
-
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */

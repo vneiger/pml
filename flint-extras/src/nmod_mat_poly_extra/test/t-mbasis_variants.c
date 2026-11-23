@@ -20,8 +20,9 @@
  *       operations, same nullspace pivot choice, only residual bookkeeping
  *       differs) -- this is the property specific to introducing a second
  *       variant, not just "is it a valid basis";
- *   (2) the dispatcher's output equals whichever of the two variants its
- *       own condition (2*cdim > rdim) selects;
+ *   (2) the dispatcher's output equals that of the two variants, and so
+ *       does nmod_poly_mat_mbasis (which reads and writes nmod_poly_mat_t
+ *       directly) on the same input converted to nmod_poly_mat_t;
  *   (3) converted to nmod_poly_mat_t, the result is a genuine shift-ordered
  *       weak Popov approximant basis (nmod_poly_mat_is_approximant_basis),
  *       independent of any implementation comparison.
@@ -100,17 +101,36 @@ static int core_test_mbasis_variants(nmod_mat_poly_t matp, slong order, const sl
         if (sh_res[i] != sh_upd[i])
             res = 0;
 
-    /* (2) dispatcher matches whichever variant it should have picked */
+    /* (2) dispatcher and nmod_poly_mat_mbasis give the same output */
     if (res)
     {
-        int expect_resupdate = (2 * cdim > rdim);
-        nmod_mat_poly_struct * expected = expect_resupdate ? app_upd : app_res;
-        slong * sh_expected = expect_resupdate ? sh_upd : sh_res;
-        if (!nmod_mat_poly_equal(app_disp, expected))
+        if (!nmod_mat_poly_equal(app_disp, app_res))
             res = 0;
         for (slong i = 0; i < rdim; i++)
-            if (sh_disp[i] != sh_expected[i])
+            if (sh_disp[i] != sh_res[i])
                 res = 0;
+    }
+    if (res)
+    {
+        nmod_poly_mat_t pmat, appbas, appbas2;
+        slong * sh_pm = flint_malloc(rdim * sizeof(slong));
+        for (slong i = 0; i < rdim; i++)
+            sh_pm[i] = shift[i];
+        nmod_poly_mat_init(pmat, rdim, cdim, matp->mod.n);
+        nmod_poly_mat_set_from_mat_poly(pmat, matp);
+        nmod_poly_mat_init(appbas, rdim, rdim, matp->mod.n);
+        nmod_poly_mat_init(appbas2, rdim, rdim, matp->mod.n);
+        nmod_poly_mat_set_from_mat_poly(appbas, app_res);
+        nmod_poly_mat_mbasis(appbas2, sh_pm, pmat, order);
+        if (!nmod_poly_mat_equal(appbas, appbas2))
+            res = 0;
+        for (slong i = 0; i < rdim; i++)
+            if (sh_pm[i] != sh_res[i])
+                res = 0;
+        nmod_poly_mat_clear(pmat);
+        nmod_poly_mat_clear(appbas);
+        nmod_poly_mat_clear(appbas2);
+        flint_free(sh_pm);
     }
 
     /* (3) genuine approximant basis property, converted to poly_mat */
