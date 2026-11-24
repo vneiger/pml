@@ -801,7 +801,9 @@ int nmod_poly_mat_is_form(const nmod_poly_mat_t mat,
  * See @ref MatrixForms for definitions
  *
  * Transforms ``mat`` in place to a row-wise, upper row echelon form, and
- * returns the rank of ``mat``.
+ * returns the rank of ``mat``. Exception: ::nmod_poly_mat_uref_matrixgcd_iter
+ * requires a generic column rank profile and returns a negative value if the
+ * input does not have one.
  *
  *   ..``tsf``. If ``tsf`` is not NULL, the same unimodular left-operations
  *   applied to ``mat`` are performed on ``tsf`` (which must therefore have as
@@ -863,7 +865,15 @@ slong nmod_poly_mat_uref_lex_xgcd(nmod_poly_mat_t mat,
  * determinant of the applied unimodular transformation (which transforms
  * the input into the output). The latter determinant is +1 or -1.
  *
- * \todo row rank profile rrp not supported yet
+ * Returned value: if the column rank profile of ``mat`` is the generic one,
+ * that is, ``(0, 1, ..., r-1)`` where ``r`` is the rank of ``mat``, the
+ * function computes the upper row echelon form as described above and returns
+ * ``r``. Otherwise, it stops as soon as it detects this and returns ``-k`` for
+ * some ``1 <= k <= r``; then ``mat`` is not in echelon form, and the contents
+ * of ``pivind`` and ``rrp`` are unspecified.
+ *
+ * If not NULL, ``rrp`` is filled with the row rank profile of the input
+ * matrix, as described above, when the returned value is nonnegative.
  * 
  * \todo to be implemented: an early detection based on known determinantal
  * degree (or sum of pivot degree) could be added so that as soon as only
@@ -890,7 +900,9 @@ slong nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
  * See @ref MatrixForms for definitions
  *
  * Transforms ``mat`` in place to its row-wise, upper Hermite normal form, and
- * returns the rank of ``mat``.
+ * returns the rank of ``mat``. Exception: ::nmod_poly_mat_hnf_ur_matrixgcd_iter
+ * requires a generic column rank profile and returns a negative value if the
+ * input does not have one.
  *
  * Input parameters are the same as for echelon forms, see @ref EchelonForms.
  *
@@ -961,7 +973,10 @@ slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat,
  * determinant of the applied unimodular transformation (which transforms
  * the input into the output).
  *
- * \todo rrp not well supported yet
+ * Returned value: as for ::nmod_poly_mat_uref_matrixgcd_iter. When it is
+ * negative, the input does not have a generic column rank profile and ``mat``
+ * is not in Hermite normal form.
+ *
  * \todo udet not supported: has to be updated during normalization
  * \todo should test for rk < 0 (non generic CRP) and proceed accordingly
  */
@@ -1157,6 +1172,9 @@ int nmod_poly_mat_hnf_diagonal(nmod_poly_struct * diag,
  * is no check that this is the case. Returns a non-ordered weak Popov form,
  * with zero rows not removed; possible zero rows are all grouped at the bottom
  * of the output matrix.
+ *
+ * Returned value: the rank of the submatrix ``submat`` described below, unless
+ * the computation stopped early (see ``early_exit_zr``).
  *
  * .. ``shift``: shift for the shifted weak Popov form. The fact that the
  * length is valid is not tested.
