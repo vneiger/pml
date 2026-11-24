@@ -18,16 +18,18 @@
  * interpolant_basis (verification.c, this same staging area) for the
  * defining-property check -- the M-level output (nmod_mat_poly_t) is
  * converted to nmod_poly_mat_t via nmod_poly_mat_set_from_mat_poly
- * (nmod_poly_mat_utils.h), the same conversion nmod_poly_mat_mintbasis
- * itself uses to wrap this dispatcher (interpolant_basis.c). 
+ * (nmod_poly_mat_utils.h).
  *
  * Checks, per random trial:
  *   (1) rescomp and resupdate agree bit-for-bit (they must: same row
  *       operations, same nullspace pivot choice, only residual bookkeeping
  *       differs);
- *   (2) the dispatcher's output equals whichever of the two variants its
- *       own condition (d*(m-n+1) <= m) selects;
- *       TODO CHECK nmod_mat_poly_mintbasis.c agrees with this formula 
+ *   (2) the dispatcher's output equals that of the two variants, and so
+ *       does nmod_poly_mat_mintbasis (which writes nmod_poly_mat_t
+ *       directly); since the variants agree by (1), which one the
+ *       dispatcher chose (_nmod_mat_poly_mintbasis_resupdate_wanted,
+ *       nmod_mat_poly_extra/impl.h) does not show in the output and is not
+ *       tested here;
  *   (3) the dispatcher's output is a genuine minimal interpolant basis
  *       (membership + generation, via the verifier), w.r.t. the original 
  *       (pre-call) shift -- shift is mutated in place by the construction
@@ -159,7 +161,7 @@ static int core_test_mintbasis(const nmod_mat_struct * E, slong m, slong n, ulon
         if (sh_res[i] != sh_upd[i])
             res = 0;
 
-    /* (2) dispatcher matches whichever variant it should have picked */
+    /* (2) the dispatcher and nmod_poly_mat_mintbasis give the same output */
     if (res)
     {
         if (!nmod_mat_poly_equal(out_disp, out_upd))
@@ -168,22 +170,27 @@ static int core_test_mintbasis(const nmod_mat_struct * E, slong m, slong n, ulon
             if (sh_disp[i] != sh_upd[i])
                 res = 0;
 
-        // int expect_resupdate = (d * (m - n + 1) <= m);
-        // nmod_mat_poly_struct * expected = expect_resupdate ? out_upd : out_res;
-        // slong * sh_expected = expect_resupdate ? sh_upd : sh_res;
-        // if (!nmod_mat_poly_equal(out_disp, expected))
-        //     res = 0;
-        // for (slong i = 0; i < m; i++)
-        //     if (sh_disp[i] != sh_expected[i])
-        //         res = 0;
+        slong * sh_pm = flint_malloc(m * sizeof(slong));
+        for (slong i = 0; i < m; i++)
+            sh_pm[i] = shift0[i];
+        nmod_poly_mat_t out_pm, out_disp_pm;
+        nmod_poly_mat_init(out_pm, m, m, prime);
+        nmod_poly_mat_init(out_disp_pm, m, m, prime);
+        nmod_poly_mat_mintbasis(out_pm, sh_pm, pts, E, d);
+        nmod_poly_mat_set_from_mat_poly(out_disp_pm, out_disp);
+        if (!nmod_poly_mat_equal(out_pm, out_disp_pm))
+            res = 0;
+        for (slong i = 0; i < m; i++)
+            if (sh_pm[i] != sh_disp[i])
+                res = 0;
+        nmod_poly_mat_clear(out_pm);
+        nmod_poly_mat_clear(out_disp_pm);
+        flint_free(sh_pm);
     }
 
-    /* (3) genuine minimal interpolant basis, w.r.t. the originalshift0 --
-       build the nmod_poly_mat_t E used by the verifier directly from the
-       first d entries of the plain array (nmod_poly_mat_set_coeff_mat,
-       the same primitive interpolant_basis.c itself uses in the other
-       direction), and convert out_disp to nmod_poly_mat_t the same way
-       nmod_poly_mat_mintbasis itself uses to wrap this dispatcher */
+    /* (3) genuine minimal interpolant basis, w.r.t. the original shift0 (the
+       verifier takes E as the same plain array; out_disp is converted to
+       nmod_poly_mat_t) */
     if (res)
     {
         nmod_poly_mat_t out_disp_pm;
@@ -211,8 +218,7 @@ TEST_FUNCTION_START(nmod_mat_poly_mintbasis, state)
 {
     int i, result;
 
-    /* explicit d=0 regression case, both sides of the dispatcher's own
-       boundary, not left to chance */
+    /* explicit d = 0 case, for random shapes, not left to chance */
     for (i = 0; i < 20; i++)
     {
         slong m = 1 + n_randint(state, 15);

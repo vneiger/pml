@@ -60,28 +60,25 @@ void _nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
         return;
     }
 
-    nmod_poly_mat_t pmat;
-
-    nmod_poly_mat_init(pmat, ipmat->r, ipmat->c, ipmat->modulus);
-    nmod_poly_mat_set_trunc(pmat,ipmat,order);
-
+    /* no truncated copy of the input: mbasis, the Krylov leaf above and the
+       middle product read only its coefficients below the order they are
+       given */
     if (order <= thres)
     {
-        nmod_poly_mat_mbasis(appbas, shift, pmat, order);
-        nmod_poly_mat_clear(pmat);
+        nmod_poly_mat_mbasis(appbas, shift, ipmat, order);
         return;
     }
 
-    const long order1 = order>>1;
-    const long order2 = order - order1;
+    const slong order1 = order >> 1;
+    const slong order2 = order - order1;
     nmod_poly_mat_t appbas2, residual;
 
-    nmod_poly_mat_init(appbas2, pmat->r, pmat->r, pmat->modulus);
-    nmod_poly_mat_init(residual, pmat->r, pmat->c, pmat->modulus);
+    nmod_poly_mat_init(appbas2, ipmat->r, ipmat->r, ipmat->modulus);
+    nmod_poly_mat_init(residual, ipmat->r, ipmat->c, ipmat->modulus);
 
-    _nmod_poly_mat_pmbasis(appbas, shift, pmat, order1, krylov_cutoff, thres);
+    _nmod_poly_mat_pmbasis(appbas, shift, ipmat, order1, krylov_cutoff, thres);
 
-    nmod_poly_mat_mulmid(residual, appbas, pmat, order1, order);
+    nmod_poly_mat_mulmid(residual, appbas, ipmat, order1, order);
 
     _nmod_poly_mat_pmbasis(appbas2, shift, residual, order2, krylov_cutoff, thres);
 
@@ -89,7 +86,6 @@ void _nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
 
     nmod_poly_mat_clear(appbas2);
     nmod_poly_mat_clear(residual);
-    nmod_poly_mat_clear(pmat);
 }
 
 void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
