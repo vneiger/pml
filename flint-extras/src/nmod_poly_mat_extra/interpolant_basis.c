@@ -21,19 +21,7 @@
 
 /** nmod_mat_poly_mintbasis takes E as a plain, flat array of at 
  *     least `d` already-initialized nmod_mat_t's (nmod_mat_struct *)*/ 
-void nmod_poly_mat_mintbasis(nmod_poly_mat_t intbas,
-                             slong * shift,
-                             const ulong * pts,
-                             const nmod_mat_struct * E,
-                             slong d)
-{
-    const slong m = intbas->r;
-    nmod_mat_poly_t intbasmp;
-    nmod_mat_poly_init(intbasmp, m, m, intbas->modulus);
-    nmod_mat_poly_mintbasis(intbasmp, shift, pts, E, d);
-    nmod_poly_mat_set_from_mat_poly(intbas, intbasmp);
-    nmod_mat_poly_clear(intbasmp);
-}
+/* nmod_poly_mat_mintbasis: see nmod_mat_poly_extra/nmod_mat_poly_mintbasis.c */
 
 
 
