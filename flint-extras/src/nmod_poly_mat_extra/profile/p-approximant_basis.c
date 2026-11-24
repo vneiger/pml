@@ -242,7 +242,8 @@ profile_leaf(int interp, ulong p, slong mmax, slong rmax, flint_rand_t state)
                     nmod_poly_mat_rand(F, state, d);
                     for (int k = 0; k < 6; k++)
                     {
-                        BEST(t[k], sh, sh0, m, _nmod_poly_mat_pmbasis(P, sh, F, d, cutoffs[k]));
+                        BEST(t[k], sh, sh0, m, _nmod_poly_mat_pmbasis(P, sh, F, d, cutoffs[k],
+                                                                  _nmod_poly_mat_pmbasis_threshold(m, n, p)));
                         if (k == 0)
                             memcpy(ref, sh, m * sizeof(slong));
                         else if (!_same(ref, sh, m))
@@ -265,7 +266,8 @@ profile_leaf(int interp, ulong p, slong mmax, slong rmax, flint_rand_t state)
                     }
                     for (int k = 0; k < 6; k++)
                     {
-                        BEST(t[k], sh, sh0, m, _nmod_poly_mat_pmintbasis(P, sh, pts, E, d, cutoffs[k]));
+                        BEST(t[k], sh, sh0, m, _nmod_poly_mat_pmintbasis(P, sh, pts, E, d, cutoffs[k],
+                                                                     _nmod_poly_mat_pmintbasis_threshold(m, n, p)));
                         if (k == 0)
                             memcpy(ref, sh, m * sizeof(slong));
                         else if (!_same(ref, sh, m))

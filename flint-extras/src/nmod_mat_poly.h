@@ -807,7 +807,7 @@ void nmod_mat_poly_mbasis_resupdate(nmod_mat_poly_t appbas,
 
 /** Main `mbasis` function: chooses between @ref nmod_mat_poly_mbasis_rescomp
  * and @ref nmod_mat_poly_mbasis_resupdate depending on the dimensions `m x n`
- * of `matp`, the order and the modulus.
+ * of `matp` and the order.
  */
 void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
                           slong * shift,
@@ -884,7 +884,8 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
  *     degree-1 correction cannot be chosen freely the way `mbasis`'s can);
  *     the part `K * intbas` is one matrix product per iteration, of the
  *     nullspace (without its identity part) by the pivot rows of `intbas`,
- *     with all their coefficients;
+ *     with all their coefficients (scalar times row operations instead when
+ *     the rank of the residual is small);
  *   - `d` evaluations of `intbas` at `pts[k]` plus `d` products
  *     `intbas(pts[k])*E_k` to find residuals.
  * See @ref nmod_mat_poly_mintbasis_resupdate for a variant that skips the
@@ -931,11 +932,6 @@ void nmod_mat_poly_mintbasis_resupdate(nmod_mat_poly_t intbas,
  * @ref nmod_mat_poly_mintbasis_rescomp and
  * @ref nmod_mat_poly_mintbasis_resupdate depending on the shape of `E`
  * and its number of points `d`.
- *
- * The condition here, `d*(m-n+1) <= m`, was found by direct measurement
- * over a grid of `(m,n,d)`. TO INVESTIGATE.
- * 
- * \todo investigate for a better dispatcher.
  */
 void nmod_mat_poly_mintbasis(nmod_mat_poly_t intbas,
                              slong * shift,

@@ -86,7 +86,8 @@ _nmod_poly_mat_interpolant_basis(nmod_poly_mat_t P, slong * shift,
             dpts[k] = pts[start[k]];
         }
 
-        _nmod_poly_mat_pmintbasis(P, shift, dpts, E, ndist, prm->leaf_cutoff);
+        _nmod_poly_mat_pmintbasis(P, shift, dpts, E, ndist, _nmod_poly_mat_relation_basis_leaf_cutoff(prm, m),
+                                  _nmod_poly_mat_pmintbasis_threshold(m, E[0].c, P->modulus));
 
         for (slong k = 0; k < ndist; k++)
             nmod_mat_window_clear(E + k);
@@ -247,6 +248,10 @@ nmod_poly_mat_interpolant_basis(nmod_poly_mat_t P, slong * rdeg,
         s[i] = shift ? shift[i] : 0;
 
     _nmod_poly_mat_relation_basis_dac_params_init(prm);
+    /* as in nmod_poly_mat_approximant_basis: a Krylov leaf at the top gives
+       the shift-Popov basis directly */
+    if (form == POPOV)
+        prm->leaf_cutoff = NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF_POPOV;
     _nmod_poly_mat_interpolant_basis(P, s, Vs, spts, prm);
 
     if (form == POPOV)

@@ -31,14 +31,20 @@
    the output, since the output of Krylov leaves is not necessarily
    the same as the output of nmod_poly_mat_mintbasis. But it remains
    a valid interpolant basis. */
-static int _pmintbasis_uses_krylov(slong m, slong n, slong d)
+static int _pmintbasis_uses_krylov_thres(slong m, slong n, slong d, slong thres)
 {
-    if (_nmod_poly_mat_krylov_wanted(m, n, n * d, NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF))
+    if (_nmod_poly_mat_krylov_wanted(m, n, n * d, _nmod_poly_mat_pmbasis_krylov_cutoff(m)))
         return 1;
-    if (d <= PMINTBASIS_THRES)
+    if (d <= thres)
         return 0;
-    return _pmintbasis_uses_krylov(m, n, (d + 1) / 2)
-           || _pmintbasis_uses_krylov(m, n, d / 2);
+    return _pmintbasis_uses_krylov_thres(m, n, (d + 1) / 2, thres)
+           || _pmintbasis_uses_krylov_thres(m, n, d / 2, thres);
+}
+
+static int _pmintbasis_uses_krylov(slong m, slong n, slong d, ulong prime)
+{
+    return _pmintbasis_uses_krylov_thres(m, n, d,
+                                         _nmod_poly_mat_pmintbasis_threshold(m, n, prime));
 }
 
 /* Converts a filled nmod_poly_mat_t (built via gen_E / nmod_poly_mat_rand,

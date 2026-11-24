@@ -32,21 +32,21 @@ void _nmod_mat_poly_shift_perm(slong * perm, const slong * shift, slong m);
 /* Left nullspace of the m x n matrix A, in the compact form computed by
  * FLINT's nmod_mat_ple_left_nullspace_compact (directly from the first
  * nonzero entry for n = 1); used at each step of mbasis and mintbasis. A is
- * overwritten. Returns the rank r of A. On return, X is a window (cleared by
+ * overwritten (except for n = 1). Returns the rank r of A. On return, X is a window (cleared by
  * the caller with nmod_mat_window_clear) of the m x m matrix K, of size
  * (m - r) x r: the basis without its identity part. If 0 < r < m, `rows`
  * (length m) holds the row rank profile of A followed by the other rows, both
  * in increasing order: row k of the basis has a 1 in position rows[r+k],
  * zeros at the other rows[r+j], and X[k][j] in position rows[j]; if r = m,
- * rows is the identity permutation (all rows are pivot rows). P and Q are
- * scratch arrays of length m and n. */
+ * rows is the identity permutation (all rows are pivot rows); if r = 0, rows
+ * is not set. P and Q are scratch arrays of length m and n. */
 slong _nmod_mat_poly_left_nullspace_compact(nmod_mat_t X, slong * rows, nmod_mat_t A,
                                             const nmod_mat_t K, slong * P, slong * Q);
 
 /* W is m x (cap m), its row i holding the coefficients 0..len-1 of the row i
  * of an m x m polynomial matrix (m entries each), followed by zeros. If need >
- * cap, reallocates W with room for at least need coefficients (2 cap if this
- * is more, but at most maxcap), keeping the coefficients, and updates cap. */
+ * cap, reallocates W with room for max(need, min(2*cap, maxcap)) coefficients,
+ * keeping the coefficients, and updates cap. Requires need <= maxcap. */
 void _nmod_mat_poly_basis_reserve(nmod_mat_t W, slong * cap, slong len,
                                   slong need, slong maxcap);
 
@@ -98,17 +98,24 @@ _nmod_mat_poly_basis_lowrank(nmod_t mod)
 }
 
 /* The choice of the variant of mbasis, for an m x n input at order `order`
- * modulo a prime of `bits` bits. See the header for more details. */
+ * modulo a prime of `bits` bits. The update of the residual series
+ * (resupdate) costs about (m-n) n^2 order^2 / 2 operations in total, its
+ * recomputation (rescomp) about m n^2 order^2 / 2; but the products of
+ * rescomp have a larger inner dimension (m len instead of the rank,
+ * generically n), hence fewer reductions per operation. Rescomp from order 64
+ * on for n <= m/2 and m >= 3, resupdate otherwise.
+ *
+ * FIXME TEMPORARY NOTES: 2026-11 (grid, m = 2 to 64, orders 8, 32, 128, 31 and 60
+ * bits; Zen 4, Comet Lake, Apple M4), 0.9% to 2.6% slower than the better
+ * variant on average on each machine (at most 1.42x), against 1.7% to 6.5% for
+ * the previous rule by modulus; for m = 2 the machines disagree, and resupdate
+ * is up to 1.15x faster at order 64 to 128 on Zen 4 and the Emerald Rapids VM.
+ * */
 static inline int
 _nmod_mat_poly_mbasis_resupdate_wanted(slong m, slong n, slong order, flint_bitcnt_t bits)
 {
-    if (2 * n > m)
-        return 1;
-    if (bits > 62)
-        return order < 64;
-    if (n == 1)
-        return !(order >= 32 && m >= 3);
-    return !(bits > 52 && order >= 32);
+    (void) bits;
+    return order < 64 || 2 * n > m || m <= 2;
 }
 
 /* mbasis, as nmod_mat_poly_mbasis, with the variant (resupdate: 1, rescomp:
@@ -119,12 +126,19 @@ void _nmod_mat_poly_mbasis(nmod_mat_poly_t appbas, slong * shift,
                            int resupd, slong lowrank);
 
 /* The choice of the variant of mintbasis, for d points and m x n matrices
- * E_k, modulo a prime of `bits` bits: resupdate when d (m-n+1) <= m. */
+ * E_k, modulo a prime of `bits` bits: resupdate when n d <= 6 m, or for
+ * n = 1 and m <= 4, rescomp otherwise.
+ *
+ * FIXME TEMPORARY NOTES 2026-11 (grid, m = 2 to 64,
+ * d = 8, 32, 128, 31 and 60 bits; Zen 4, Comet Lake, Apple M4): 0.9% to 2.3%
+ * slower than the better variant on average on each machine (at most 1.37x),
+ * against 6.8% to 17% for the previous rule d (m-n+1) <= m, which nearly
+ * always chose rescomp. */
 static inline int
 _nmod_mat_poly_mintbasis_resupdate_wanted(slong m, slong n, slong d, flint_bitcnt_t bits)
 {
     (void) bits;
-    return d * (m - n + 1) <= m;
+    return n * d <= 6 * m || (n == 1 && m <= 4);
 }
 
 /* mintbasis, as nmod_mat_poly_mintbasis, with the variant (resupdate: 1,

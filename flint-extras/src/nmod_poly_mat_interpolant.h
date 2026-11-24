@@ -105,8 +105,6 @@
 #ifndef NMOD_POLY_MAT_INTERPOLANT_H
 #define NMOD_POLY_MAT_INTERPOLANT_H
 
-#define PMINTBASIS_THRES 32
-
 #include <flint/nmod_types.h>
 #include <flint/nmod_poly_mat.h>
 
@@ -161,13 +159,11 @@ int nmod_poly_mat_is_interpolant_basis(const nmod_poly_mat_t intbas,
 
 /** @name M-IntBasis algorithm (uniform number of interpolation points)
  *
- * The core of these functions is implemented with `nmod_mat_poly_t` type,
- * for efficiency reasons, mirroring `mbasis`'s own choice (see @ref
- * mintbasis in `nmod_mat_poly.h` for the mat_poly-level M-IntBasis
- * variants and their doc comments -- this function is a thin wrapper
- * around that dispatcher, converting to/from the entrywise `nmod_poly_mat_t`
- * representation used at this level, exactly mirroring
- * @ref nmod_poly_mat_mbasis's own role for `mbasis`).
+ * This function shares its core and its choice of variant with the
+ * mat_poly-level M-IntBasis (see @ref mintbasis in `nmod_mat_poly.h` for the
+ * variants and their doc comments), and writes `intbas` directly, without
+ * conversion from `nmod_mat_poly_t`, as @ref nmod_poly_mat_mbasis does for
+ * `mbasis`.
  *
  * Size of the integers (see @ref IntegerSizes): each entry of `shift`
  * increases by at most `d` (the number of points) during the computation; it
@@ -229,7 +225,8 @@ void nmod_poly_mat_mintbasis(nmod_poly_mat_t intbas,
 
 /** Computes a `shift`-ordered weak Popov interpolant basis for `(E,pts)`
  * using the algorithm PM-IntBasis (see @ref pmintbasis). Falls back to
- * @ref nmod_poly_mat_mintbasis once `d <= PMINTBASIS_THRES`. */
+ * @ref nmod_poly_mat_mintbasis for few points (a threshold depending on the
+ * dimensions, see nmod_poly_mat_extra/impl.h). */
 void nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
                               slong * shift,
                               const ulong * pts,
@@ -365,6 +362,8 @@ void nmod_poly_mat_pmintbasis_geometric_auto(nmod_poly_mat_t intbas,
  * For `POPOV`, unless the basis found is already in `shift`-Popov form, a
  * second basis is computed with the shift `-delta`, where `delta` is the
  * `shift`-pivot degree, and normalized by the inverse of its leading matrix.
+ * As for approximants, the Krylov leaves then use a larger cutoff
+ * (NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF_POPOV, nmod_poly_mat_extra/impl.h).
  *
  * \param[out] P interpolant basis, initialized with dimensions `m x m`
  * \param[out] rdeg the `shift`-row degree of `P` (length `m`), or `NULL`; it may alias `shift`

@@ -96,6 +96,22 @@ static int core_test_pmintbasis_geometric(slong m, slong n, slong d, ulong p, fl
     if (res && !nmod_poly_mat_is_interpolant_basis(intbas_geo, pts, E, d, shift0, ROW_LOWER))
         res = 0;
 
+    /* the recursion with a small threshold, without Krylov leaf: the same
+       output as mintbasis at the same points */
+    if (res && d > 0)
+    {
+        const slong thres = 4 + d % 13;
+        for (slong i = 0; i < m; i++)
+            shift_geo[i] = shift_gen[i] = shift0[i];
+        _nmod_poly_mat_pmintbasis_geometric(intbas_geo, shift_geo, NULL, E, r, d, 0.0, thres);
+        nmod_poly_mat_mintbasis(intbas_gen, shift_gen, pts, E, d);
+        if (!nmod_poly_mat_equal(intbas_geo, intbas_gen))
+            res = 0;
+        for (slong i = 0; i < m; i++)
+            if (shift_geo[i] != shift_gen[i])
+                res = 0;
+    }
+
     nmod_poly_mat_clear(intbas_geo);
     nmod_poly_mat_clear(intbas_gen);
     free_array(E, d);

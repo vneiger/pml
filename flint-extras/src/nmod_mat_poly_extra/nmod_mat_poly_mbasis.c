@@ -43,17 +43,18 @@
 
     - the update of the basis (and of the residual series) by the left
       nullspace of the residual is a single product X * (pivot rows), over all
-      the coefficients at once, instead of one product per coefficient of
+      the coefficients at once (or, for a residual of small rank, scalar
+      times row operations), instead of one product per coefficient of
       appbas, plus a matrix addition each time;
 
     - there is no row permutation of appbas (or of the residual series): the
       pivot rows are gathered into a contiguous matrix, which is also what
       their multiplication by x copies back.
 
-    The row operations are the same as those of the previous implementation
-    before the commit adding this comment (using nmod_mat_poly_t, with
-    permutations of the rows), in the same order, so the output (appbas and
-    shift) is the same, and the two variants give the same output.
+    Both variants apply the same row operations, with the same pivots, in
+    the same order, so they give the same output (appbas and shift); this is
+    also the output of the implementation on nmod_mat_poly_t with row
+    permutations that this one replaces (2026-11).
 */
 
 typedef struct
@@ -127,6 +128,7 @@ _nmod_mat_poly_basis_reserve(nmod_mat_t W, slong * cap, slong len,
     if (need <= *cap)
         return;
 
+    FLINT_ASSERT(need <= maxcap);
     const slong m = W->r;
     const slong newcap = FLINT_MIN(maxcap, FLINT_MAX(need, 2 * *cap));
     nmod_mat_t W2;
@@ -156,24 +158,24 @@ _nmod_mat_poly_shift_perm(slong * perm, const slong * shift, slong m)
 }
 
 slong
-_nmod_mat_poly_left_nullspace_compact(nmod_mat_t X, slong * rows, nmod_mat_t res,
+_nmod_mat_poly_left_nullspace_compact(nmod_mat_t X, slong * rows, nmod_mat_t A,
                                       const nmod_mat_t K, slong * P, slong * Q)
 {
-    const slong m = res->r;
-    const nmod_t mod = res->mod;
+    const slong m = A->r;
+    const nmod_t mod = A->mod;
     slong rank;
 
-    if (res->c == 1)
+    if (A->c == 1)
     {
         /* one column: the pivot is the first nonzero entry */
         slong i0 = 0;
-        while (i0 < m && nmod_mat_entry(res, i0, 0) == 0)
+        while (i0 < m && nmod_mat_entry(A, i0, 0) == 0)
             i0++;
         rank = (i0 < m);
         nmod_mat_window_init(X, K, 0, 0, m - rank, rank);
         if (rank == 1 && m > 1)
         {
-            const ulong c = nmod_neg(nmod_inv(nmod_mat_entry(res, i0, 0), mod), mod);
+            const ulong c = nmod_neg(nmod_inv(nmod_mat_entry(A, i0, 0), mod), mod);
             rows[0] = i0;
             for (slong i = 0; i < i0; i++)
             {
@@ -183,16 +185,16 @@ _nmod_mat_poly_left_nullspace_compact(nmod_mat_t X, slong * rows, nmod_mat_t res
             for (slong i = i0 + 1; i < m; i++)
             {
                 rows[i] = i;
-                nmod_mat_entry(X, i - 1, 0) = nmod_mul(nmod_mat_entry(res, i, 0), c, mod);
+                nmod_mat_entry(X, i - 1, 0) = nmod_mul(nmod_mat_entry(A, i, 0), c, mod);
             }
         }
     }
     else
     {
-        rank = nmod_mat_ple(P, Q, res, 0);
+        rank = nmod_mat_ple(P, Q, A, 0);
         nmod_mat_window_init(X, K, 0, 0, m - rank, rank);
         if (rank > 0 && rank < m)
-            nmod_mat_ple_left_nullspace_compact(X, rows, res, P, rank);
+            nmod_mat_ple_left_nullspace_compact(X, rows, A, P, rank);
     }
 
     if (rank == m)
@@ -260,11 +262,11 @@ _mbasis_run(_mbasis_t S, slong * shift, slong lowrank)
                 if (n == 1)
                 {
                     /* matrix-vector product, called directly: the column
-                       Mw is contiguous, so no copies (nmod_mat_mul copies
-                       it for good reasons; and worse in Nov 2026 but should
-                       change soon: it does not use this product for fewer than
-                       8 rows or with several threads) 
-                       TODO update this second part in parenthesis when this is fixed */
+                       Mw is contiguous, so it is not copied. nmod_mat_mul
+                       would copy it (a column is strided in general) and,
+                       in FLINT main as of Nov 2026, uses this product only
+                       for at least 8 rows and one thread.
+                       TODO revisit when FLINT changes this */
                     nmod_mat_mul_nmod_vec(v, Aw, nmod_mat_entry_ptr(Mw, 0, 0), Aw->c);
                     for (slong i = 0; i < m; i++)
                         nmod_mat_entry(res, i, 0) = v[perm[i]];
