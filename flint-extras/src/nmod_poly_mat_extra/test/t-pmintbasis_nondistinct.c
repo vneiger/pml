@@ -22,7 +22,9 @@
  *       place by the construction calls, see t-verification.c's own
  *       header comment for the real bug this caught there.
  *
- * `d` ranges both below and above PMINTBASIS_THRES (32), so pmintbasis's
+ * `d` ranges both below and above the threshold of pmintbasis for some n
+ * (64 to 512 for n <= 16, see _nmod_poly_mat_pmintbasis_threshold), and the
+ * recursion is also run with a small threshold, so pmintbasis's
  * base case and its genuine divide-and-conquer recursion are both
  * exercised under non-distinct points -- including the case where the
  * point list is split in half and a repeated point's occurrences land on
@@ -93,7 +95,7 @@ static int core_test(slong m, ulong prime, const nmod_mat_struct * E,
     /* (1) M-level and PM-level agree bit-for-bit, even under non-distinct
        points (see header comment), unless pmintbasis uses a Krylov leaf (the
        shift-Popov basis); the shifted row degrees agree in any case */
-    if (!(d > 0 && _pmintbasis_uses_krylov(m, E[0].c, d)) && !nmod_poly_mat_equal(intbas_m, intbas_pm))
+    if (!(d > 0 && _pmintbasis_uses_krylov(m, E[0].c, d, prime)) && !nmod_poly_mat_equal(intbas_m, intbas_pm))
         res = 0;
     for (slong i = 0; i < m; i++)
         if (sh_m[i] != sh_pm[i])
@@ -103,6 +105,21 @@ static int core_test(slong m, ulong prime, const nmod_mat_struct * E,
        property, w.r.t. the original shift0 */
     if (res && !nmod_poly_mat_is_interpolant_basis(intbas_pm, pts, E, d, shift0, ROW_LOWER))
         res = 0;
+
+    /* (3) the recursion with a small threshold and without Krylov leaf
+       agrees bit-for-bit with the M-level, so that repeated points
+       straddling the splits are exercised whatever the default threshold */
+    if (res && d > 0)
+    {
+        for (slong i = 0; i < m; i++)
+            sh_pm[i] = shift0[i];
+        _nmod_poly_mat_pmintbasis(intbas_pm, sh_pm, pts, E, d, 0.0, 4 + d % 13);
+        if (!nmod_poly_mat_equal(intbas_m, intbas_pm))
+            res = 0;
+        for (slong i = 0; i < m; i++)
+            if (sh_m[i] != sh_pm[i])
+                res = 0;
+    }
 
     nmod_poly_mat_clear(intbas_m);
     nmod_poly_mat_clear(intbas_pm);
@@ -165,7 +182,8 @@ TEST_FUNCTION_START(nmod_poly_mat_pmintbasis_nondistinct, state)
        up to d (every point distinct, the ordinary case) -- this test's
        whole range subsumes the classical distinct-points test as one
        endpoint, not a separate case. d ranges both below and above
-       PMINTBASIS_THRES (32), so pmintbasis's base case and its genuine
+       a small threshold of pmintbasis (check (3) of core_test), so
+       pmintbasis's base case and its genuine
        recursion are both exercised, including repeats straddling the D&C
        split. */
     for (i = 0; i < 100 * flint_test_multiplier(); i++)

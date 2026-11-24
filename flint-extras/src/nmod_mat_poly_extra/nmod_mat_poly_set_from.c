@@ -268,10 +268,6 @@ int _pml_transpose_widest_kernel(void)
 /* blocked implementation                                                  */
 /*------------------------------------------------------------------------*/
 
-/* Below this many words the pointer tables and their allocation dominate;
-   just run the naive loop. */
-#define _PML_CONV_TINY 512
-
 void _nmod_mat_poly_set_trunc_from_poly_mat(nmod_mat_poly_t matp,
                                             const nmod_poly_mat_t pmat,
                                             slong order,

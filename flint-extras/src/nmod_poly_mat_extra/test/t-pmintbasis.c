@@ -62,8 +62,8 @@ static int core_test_pmintbasis(const nmod_mat_struct * E, slong m, slong n, ulo
        mintbasis, so when d is within the threshold they must agree
        bit-for-bit, unless pmintbasis uses a Krylov leaf: this gives the
        shift-Popov basis, with the same shifted row degree */
-    const int krylov = _pmintbasis_uses_krylov(m, n, d);
-    if (d <= PMINTBASIS_THRES || krylov)
+    const int krylov = _pmintbasis_uses_krylov(m, n, d, prime);
+    if (d <= _nmod_poly_mat_pmintbasis_threshold(m, n, prime) || krylov)
     {
         slong * sh_m = flint_malloc(m * sizeof(slong));
         for (slong i = 0; i < m; i++)
@@ -79,6 +79,40 @@ static int core_test_pmintbasis(const nmod_mat_struct * E, slong m, slong n, ulo
                 res = 0;
 
         nmod_poly_mat_clear(out_m);
+        flint_free(sh_m);
+    }
+
+    /* the recursion with a small threshold: without Krylov leaf, the same
+       output as mintbasis (the same row operations); with the Krylov leaf, a
+       basis with the same shifted row degree */
+    if (res && d > 0)
+    {
+        const slong thres = 4 + d % 13;
+        slong * sh_m = flint_malloc(2 * m * sizeof(slong));
+        slong * sh_r = sh_m + m;
+        nmod_poly_mat_t out_m, out_r;
+        nmod_poly_mat_init(out_m, m, m, prime);
+        nmod_poly_mat_init(out_r, m, m, prime);
+        for (slong i = 0; i < m; i++)
+            sh_m[i] = sh_r[i] = shift0[i];
+        nmod_poly_mat_mintbasis(out_m, sh_m, pts, E, d);
+        _nmod_poly_mat_pmintbasis(out_r, sh_r, pts, E, d, 0.0, thres);
+        if (!nmod_poly_mat_equal(out_m, out_r))
+            res = 0;
+        for (slong i = 0; i < m; i++)
+        {
+            if (sh_r[i] != sh_m[i] || sh_pm[i] != sh_m[i])
+                res = 0;
+            sh_r[i] = shift0[i];
+        }
+        _nmod_poly_mat_pmintbasis(out_r, sh_r, pts, E, d, NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF, thres);
+        for (slong i = 0; i < m; i++)
+            if (sh_r[i] != sh_m[i])
+                res = 0;
+        if (res && !nmod_poly_mat_is_interpolant_basis(out_r, pts, E, d, shift0, ROW_LOWER))
+            res = 0;
+        nmod_poly_mat_clear(out_m);
+        nmod_poly_mat_clear(out_r);
         flint_free(sh_m);
     }
 

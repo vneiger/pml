@@ -99,8 +99,6 @@
 #ifndef NMOD_POLY_MAT_APPROXIMANT_H
 #define NMOD_POLY_MAT_APPROXIMANT_H
 
-#define PMBASIS_THRES 32
-
 #include <flint/nmod_types.h>
 
 #include "nmod_poly_mat_forms.h" // for orientation_t
@@ -143,6 +141,9 @@ extern "C" {
  * second basis is computed with the shift `-delta`, where `delta` is the
  * `shift`-pivot degree, and normalized by the inverse of its leading matrix,
  * which takes about the time of the first one.
+ * Since a Krylov leaf at the top gives the `shift`-Popov basis directly, the
+ * Krylov leaves use a larger cutoff for `POPOV`
+ * (NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF_POPOV, nmod_poly_mat_extra/impl.h).
  *
  * \param[out] P approximant basis, initialized with dimensions `m x m`
  * \param[out] rdeg the `shift`-row degree of `P` (length `m`), or `NULL`; it may alias `shift`
@@ -301,15 +302,20 @@ void nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
  *
  * Krylov leaves: at each node of the recursion, with `m x n` the dimensions
  * of `pmat` and `order` the order at this node, if `n < m` and `n order <=
- * c m / n^(1/3)` (for a constant c, see below), the basis of this node
- * is computed directly by ::nmod_poly_mat_approximant_basis_krylov (linear
+ * c m / n^(1/3)` (for a constant c depending on m, see below), the basis of
+ * this node is computed directly by ::nmod_poly_mat_approximant_basis_krylov (linear
  * algebra on a Krylov matrix, about `D^2 (D + m)` operations for `D = n
  * order`), which is faster than the recursion for inputs with few columns and
  * an order that is not too large compared to `m / n`. This gives the
  * `shift`-Popov basis of the node; when such a leaf is used at the top of the
  * recursion, `appbas` is the `shift`-Popov basis, and in any case it is
- * `shift`-ordered weak Popov. The value of `c` is
- * NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF (nmod_poly_mat_extra/impl.h).
+ * `shift`-ordered weak Popov. The value of `c` depends on `m` (no leaf for
+ * `m <= 4`, then 3, and 6 from `m = 64` on; see
+ * `_nmod_poly_mat_pmbasis_krylov_cutoff` in nmod_poly_mat_extra/impl.h).
+ *
+ * Base case: at orders up to a threshold depending on `n` (see
+ * `_nmod_poly_mat_pmbasis_threshold` in nmod_poly_mat_extra/impl.h), the basis
+ * is computed by ::nmod_poly_mat_mbasis.
  *
  * Size of the integers (see @ref IntegerSizes): as in `mbasis`, each entry of
  * `shift` increases by at most `order` during the computation; it is assumed

@@ -33,13 +33,15 @@ static void _pmintbasis_geometric_rec(nmod_poly_mat_t intbas,
                                       ulong rho_start,
                                       slong d,
                                       nmod_t mod,
-                                      const nmod_geometric_progression_t G)
+                                      const nmod_geometric_progression_t G,
+                                      double krylov_cutoff,
+                                      slong thres)
 {
     ulong rho = nmod_mul(r, r, mod);
     const slong m = intbas->r;
 
     /* Krylov leaf: replaces the subtree below this node */
-    if (_nmod_poly_mat_krylov_wanted(m, n, n * d, NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF))
+    if (_nmod_poly_mat_krylov_wanted(m, n, n * d, krylov_cutoff))
     {
         ulong * pts = (ulong *) flint_malloc(d * sizeof(ulong));
         ulong cur = rho_start;
@@ -53,7 +55,7 @@ static void _pmintbasis_geometric_rec(nmod_poly_mat_t intbas,
         return;
     }
 
-    if (d <= PMINTBASIS_THRES)
+    if (d <= thres)
     {
         ulong * pts = (ulong *) flint_malloc(d * sizeof(ulong));
         ulong cur = rho_start;
@@ -74,7 +76,7 @@ static void _pmintbasis_geometric_rec(nmod_poly_mat_t intbas,
        than d1, extra entries simply unused. */
     nmod_poly_mat_t P1;
     nmod_poly_mat_init(P1, m, m, intbas->modulus);
-    _pmintbasis_geometric_rec(P1, shift, E, n, r, rho_start, d1, mod, G);
+    _pmintbasis_geometric_rec(P1, shift, E, n, r, rho_start, d1, mod, G, krylov_cutoff, thres);
 
      /* R_i = P1(zeta*rho^i) * E_{d1+i}, i=0..d2-1, zeta = rho_start*rho^d1
        (the absolute start of the second half's points). Evaluating P1's
@@ -146,7 +148,7 @@ static void _pmintbasis_geometric_rec(nmod_poly_mat_t intbas,
 
     nmod_poly_mat_t P2;
     nmod_poly_mat_init(P2, m, m, intbas->modulus);
-    _pmintbasis_geometric_rec(P2, shift, R, n, r, zeta, d2, mod, G);
+    _pmintbasis_geometric_rec(P2, shift, R, n, r, zeta, d2, mod, G, krylov_cutoff, thres);
     for (slong idx = 0; idx < d2; idx++)
     {
         if (coeffs)
@@ -164,12 +166,14 @@ static void _pmintbasis_geometric_rec(nmod_poly_mat_t intbas,
     nmod_poly_mat_clear(P2);
 }
 
-void nmod_poly_mat_pmintbasis_geometric(nmod_poly_mat_t intbas,
-                                        slong * shift,
-                                        ulong * pts,
-                                        const nmod_mat_struct * E,
-                                        ulong r,
-                                        slong d)
+void _nmod_poly_mat_pmintbasis_geometric(nmod_poly_mat_t intbas,
+                                         slong * shift,
+                                         ulong * pts,
+                                         const nmod_mat_struct * E,
+                                         ulong r,
+                                         slong d,
+                                         double krylov_cutoff,
+                                         slong thres)
 {
     /* d=0: no points, output is the identity, shift unchanged -- matching
        the same convention as every other function in this project TO SEE. */
@@ -193,7 +197,7 @@ void nmod_poly_mat_pmintbasis_geometric(nmod_poly_mat_t intbas,
     nmod_geometric_progression_t G;
     _nmod_geometric_progression_init_function(G, r, d, mod, 1); /* 1 = evaluation only */
 
-    _pmintbasis_geometric_rec(intbas, shift, E, n, r, 1, d, mod, G);
+    _pmintbasis_geometric_rec(intbas, shift, E, n, r, 1, d, mod, G, krylov_cutoff, thres);
 
     nmod_geometric_progression_clear(G);
 
@@ -207,6 +211,19 @@ void nmod_poly_mat_pmintbasis_geometric(nmod_poly_mat_t intbas,
             cur = nmod_mul(cur, rho, mod);
         }
     }
+}
+
+void nmod_poly_mat_pmintbasis_geometric(nmod_poly_mat_t intbas,
+                                        slong * shift,
+                                        ulong * pts,
+                                        const nmod_mat_struct * E,
+                                        ulong r,
+                                        slong d)
+{
+    _nmod_poly_mat_pmintbasis_geometric(intbas, shift, pts, E, r, d,
+                                        _nmod_poly_mat_pmbasis_krylov_cutoff(intbas->r),
+                                        (d > 0) ? _nmod_poly_mat_pmintbasis_geometric_threshold(intbas->r, E[0].c,
+                                                                                                intbas->modulus) : 0);
 }
 
 /** Targets the pairwise distinct points case.    

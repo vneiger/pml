@@ -14,28 +14,139 @@
 #define NMOD_MAT_POLY_EXTRA_IMPL_H
 
 #include <flint/nmod_types.h>
+#include <flint/nmod.h>
 #include <flint/nmod_mat.h>
 
 #include "nmod_mat_poly.h"
 
+/* ------------------------------------------------------------------------ */
+/* mbasis and mintbasis (nmod_mat_poly_mbasis.c, nmod_mat_poly_mintbasis.c) */
+/* ------------------------------------------------------------------------ */
+
+/* Sorts perm (a permutation of 0..m-1) so that the pairs (shift[perm[i]],
+ * perm[i]) increase: the rows sorted by shift, with priority to the smaller
+ * index for equal shifts. Insertion sort: from one iteration of mbasis to
+ * the next, perm is nearly sorted. */
+void _nmod_mat_poly_shift_perm(slong * perm, const slong * shift, slong m);
+
 /* Left nullspace of the m x n matrix A, in the compact form computed by
- * FLINT's nmod_mat_ple_left_nullspace_compact; used at each step of mbasis and
- * mintbasis. A is overwritten by its PLE decomposition. On return, X is
- * initialized (the caller clears it) to the (m - r) x r matrix of the basis
- * without its identity part, where r is the rank of A, and `rows` (length m)
- * holds the row rank profile of A followed by the other rows, both in
- * increasing order: row k of the basis has a 1 in position rows[r+k], zeros at
- * the other rows[r+j], and X[k][j] in position rows[j]. P and Q are scratch
- * arrays of length m and n. Returns the nullity m - r. */
-static inline slong
-_nmod_mat_left_nullspace_compact_ple(nmod_mat_t X, slong * rows, nmod_mat_t A,
-                                     slong * P, slong * Q)
+ * FLINT's nmod_mat_ple_left_nullspace_compact (directly from the first
+ * nonzero entry for n = 1); used at each step of mbasis and mintbasis. A is
+ * overwritten (except for n = 1). Returns the rank r of A. On return, X is a window (cleared by
+ * the caller with nmod_mat_window_clear) of the m x m matrix K, of size
+ * (m - r) x r: the basis without its identity part. If 0 < r < m, `rows`
+ * (length m) holds the row rank profile of A followed by the other rows, both
+ * in increasing order: row k of the basis has a 1 in position rows[r+k],
+ * zeros at the other rows[r+j], and X[k][j] in position rows[j]; if r = m,
+ * rows is the identity permutation (all rows are pivot rows); if r = 0, rows
+ * is not set. P and Q are scratch arrays of length m and n. */
+slong _nmod_mat_poly_left_nullspace_compact(nmod_mat_t X, slong * rows, nmod_mat_t A,
+                                            const nmod_mat_t K, slong * P, slong * Q);
+
+/* W is m x (cap m), its row i holding the coefficients 0..len-1 of the row i
+ * of an m x m polynomial matrix (m entries each), followed by zeros. If need >
+ * cap, reallocates W with room for max(need, min(2*cap, maxcap)) coefficients,
+ * keeping the coefficients, and updates cap. Requires need <= maxcap. */
+void _nmod_mat_poly_basis_reserve(nmod_mat_t W, slong * cap, slong len,
+                                  slong need, slong maxcap);
+
+/* Makes sure that A has at least r rows and c columns, reallocating it (its
+ * entries are not kept) if needed: for scratch matrices whose size grows. */
+static inline void
+_nmod_mat_poly_scratch_fit(nmod_mat_t A, slong r, slong c)
 {
-    const slong rank = nmod_mat_ple(P, Q, A, 0);
-    nmod_mat_init(X, A->r - rank, rank, A->mod.n);
-    nmod_mat_ple_left_nullspace_compact(X, rows, A, P, rank);
-    return A->r - rank;
+    if (A->r < r || A->c < c)
+    {
+        const ulong p = A->mod.n;
+        r = FLINT_MAX(r, A->r);
+        c = FLINT_MAX(c, A->c);
+        nmod_mat_clear(A);
+        nmod_mat_init(A, r, c, p);
+    }
 }
+
+/* In mbasis and mintbasis, the other rows receive a combination of the rank
+ * pivot rows of the residual: up to the rank returned here, by scalar times
+ * row operations, and otherwise by one matrix product, whose inner dimension
+ * is this rank. First crossovers from measurements in 2026-11, balanced
+ * uniform random input, m = 2 to 64, orders 8, 32, 128, Zen 4, Comet Lake,
+ * Apple M4, Emerald Rapids VM: up to 2^52, the row operations win up to rank 3
+ * (Zen 4, M4) to 6 (Comet Lake, VM); above 2^52, where nmod_mat_mul has no
+ * SIMD kernel, up to rank 4 (M4) to 8 (Zen 4, VM). Hence 3 and 4 on aarch64
+ * (measured on the M4 only), 4 and 8 elsewhere.
+ * TODO rough values, to be refined in a tuning stage (per machine?) */
+#ifndef NMOD_MAT_POLY_BASIS_LOWRANK
+# if defined(__aarch64__)
+#  define NMOD_MAT_POLY_BASIS_LOWRANK 3
+# else
+#  define NMOD_MAT_POLY_BASIS_LOWRANK 4
+# endif
+#endif
+#ifndef NMOD_MAT_POLY_BASIS_LOWRANK_LARGE
+# if defined(__aarch64__)
+#  define NMOD_MAT_POLY_BASIS_LOWRANK_LARGE 4
+# else
+#  define NMOD_MAT_POLY_BASIS_LOWRANK_LARGE 8
+# endif
+#endif
+
+static inline slong
+_nmod_mat_poly_basis_lowrank(nmod_t mod)
+{
+    return (NMOD_BITS(mod) > 52) ? NMOD_MAT_POLY_BASIS_LOWRANK_LARGE
+                                 : NMOD_MAT_POLY_BASIS_LOWRANK;
+}
+
+/* The choice of the variant of mbasis, for an m x n input at order `order`
+ * modulo a prime of `bits` bits. The update of the residual series
+ * (resupdate) costs about (m-n) n^2 order^2 / 2 operations in total, its
+ * recomputation (rescomp) about m n^2 order^2 / 2; but the products of
+ * rescomp have a larger inner dimension (m len instead of the rank,
+ * generically n), hence fewer reductions per operation. Rescomp from order 64
+ * on for n <= m/2 and m >= 3, resupdate otherwise.
+ *
+ * FIXME TEMPORARY NOTES: 2026-11 (grid, m = 2 to 64, orders 8, 32, 128, 31 and 60
+ * bits; Zen 4, Comet Lake, Apple M4), 0.9% to 2.6% slower than the better
+ * variant on average on each machine (at most 1.42x), against 1.7% to 6.5% for
+ * the previous rule by modulus; for m = 2 the machines disagree, and resupdate
+ * is up to 1.15x faster at order 64 to 128 on Zen 4 and the Emerald Rapids VM.
+ * */
+static inline int
+_nmod_mat_poly_mbasis_resupdate_wanted(slong m, slong n, slong order, flint_bitcnt_t bits)
+{
+    (void) bits;
+    return order < 64 || 2 * n > m || m <= 2;
+}
+
+/* mbasis, as nmod_mat_poly_mbasis, with the variant (resupdate: 1, rescomp:
+ * 0) and the rank up to which the update is done by scalar times row
+ * operations (see _nmod_mat_poly_basis_lowrank) given */
+void _nmod_mat_poly_mbasis(nmod_mat_poly_t appbas, slong * shift,
+                           const nmod_mat_poly_t matp, slong order,
+                           int resupd, slong lowrank);
+
+/* The choice of the variant of mintbasis, for d points and m x n matrices
+ * E_k, modulo a prime of `bits` bits: resupdate when n d <= 6 m, or for
+ * n = 1 and m <= 4, rescomp otherwise.
+ *
+ * FIXME TEMPORARY NOTES 2026-11 (grid, m = 2 to 64,
+ * d = 8, 32, 128, 31 and 60 bits; Zen 4, Comet Lake, Apple M4): 0.9% to 2.3%
+ * slower than the better variant on average on each machine (at most 1.37x),
+ * against 6.8% to 17% for the previous rule d (m-n+1) <= m, which nearly
+ * always chose rescomp. */
+static inline int
+_nmod_mat_poly_mintbasis_resupdate_wanted(slong m, slong n, slong d, flint_bitcnt_t bits)
+{
+    (void) bits;
+    return n * d <= 6 * m || (n == 1 && m <= 4);
+}
+
+/* mintbasis, as nmod_mat_poly_mintbasis, with the variant (resupdate: 1,
+ * rescomp: 0) and the rank up to which the update is done by scalar times
+ * row operations (see _nmod_mat_poly_basis_lowrank) given */
+void _nmod_mat_poly_mintbasis(nmod_mat_poly_t intbas, slong * shift,
+                              const ulong * pts, const nmod_mat_struct * E, slong d,
+                              int resupd, slong lowrank);
 
 /* Block kernels for the transposition that underlies both conversions
  * between nmod_poly_mat and nmod_mat_poly: values for the `kern` parameter
@@ -97,6 +208,10 @@ int _pml_transpose_narrow_kernel(int kern, slong ndst, slong nsrc);
 
 /* The widest kernel this build provides. */
 int _pml_transpose_widest_kernel(void);
+
+/* Below this many words, the pointer tables of _pml_transpose and their
+ * allocation dominate: the conversions use a plain loop instead. */
+#define _PML_CONV_TINY 512
 
 /* Same as nmod_mat_poly_set_trunc_from_poly_mat, with explicit control over
  * the block kernel and the loop schedule.

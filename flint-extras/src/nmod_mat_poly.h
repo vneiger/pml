@@ -735,13 +735,13 @@ nmod_mat_poly_set_from_poly_mat(nmod_mat_poly_t matp, const nmod_poly_mat_t pmat
  *   - `order` products `(X Id + K) * appbas` to update the approximant basis;
  *   - `order` computations of "coefficient `k` of `appbas*pmat`" to find
  *     residuals.
- * Assuming the degree of `appbas` at iteration `ord` is `m*ord/n` (this holds
+ * Assuming the degree of `appbas` at iteration `ord` is `n*ord/m` (this holds
  * at least generically, and exactly for the uniform shift with generic
  * `pmat`), the third item costs `O(m n^2 order^2 / 2)` operations, assuming
- * cubic matrix multiplication over the field. See @ref mbasis_resupdate for
- * a variant that is asymptotically cheaper when `n` is close to `m`. */
-
-  /* TODO improve efficiency when `deg(pmat) << order` */
+ * cubic matrix multiplication over the field (less when `deg(pmat) < order`:
+ * only the coefficients of `pmat` are used). Each residual is one matrix
+ * product, with inner dimension `m` times the length of `appbas`. See
+ * @ref mbasis_resupdate for a variant with fewer operations. */
 void nmod_mat_poly_mbasis_rescomp(nmod_mat_poly_t appbas,
                                   slong * shift,
                                   const nmod_mat_poly_t matp,
@@ -760,10 +760,12 @@ void nmod_mat_poly_mbasis_rescomp(nmod_mat_poly_t appbas,
  *   - `order` products `(X Id + K) * appbas` to update the approximant basis;
  *   - `order-1` products `(X Id + K) * (matrix of degree order-ord)` to
  *     update the residual, for `ord = 1 .. order-1`.
- * Assuming cubic matrix multiplication over the field, the third item costs
- * `O(m n (m-n) order^2 / 2)` operations -- a factor `n/(m-n)` cheaper than
- * rescomp's residual-recomputation cost, so this variant wins as `n`
- * approaches `m`. Output is identical to
+ * Assuming cubic matrix multiplication over the field, and since `K` is
+ * the identity on `m-n` rows plus a `(m-n) x n` matrix, the third item costs
+ * `O((m-n) n^2 order^2 / 2)` operations -- a factor `m/(m-n)` fewer than
+ * rescomp's residual recomputation, but the products have inner dimension
+ * the rank of the residual, generically `n` (see @ref nmod_mat_poly_mbasis
+ * for the choice between the two). Output is identical to
  * @ref nmod_mat_poly_mbasis_rescomp on identical input: both variants apply
  * the same row operations and the same nullspace pivot choice, only the
  * residual bookkeeping differs. */
@@ -804,9 +806,8 @@ void nmod_mat_poly_mbasis_resupdate(nmod_mat_poly_t appbas,
 // TODO general version with choice
 
 /** Main `mbasis` function: chooses between @ref nmod_mat_poly_mbasis_rescomp
- * and @ref nmod_mat_poly_mbasis_resupdate depending on the shape of `matp`
- * (`cdim > rdim/2` selects resupdate, since that is where its asymptotic
- * `n/(m-n)` advantage becomes worthwhile. 
+ * and @ref nmod_mat_poly_mbasis_resupdate depending on the dimensions `m x n`
+ * of `matp` and the order.
  */
 void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
                           slong * shift,
@@ -866,8 +867,11 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
 //@{
 
 /** Variant of `mintbasis` (see @ref mintbasis) where the residual matrix
- * `intbas(pts[k])*E_k` is recomputed from scratch, via a full Horner
- * evaluation of `intbas` at `pts[k]`, at every iteration.
+ * `intbas(pts[k])*E_k` is recomputed from scratch at every iteration: the
+ * evaluation of `intbas` at `pts[k]` (one vector-matrix product per row of
+ * `intbas`, the powers of `pts[k]` times its coefficients) and its product
+ * by `E_k`; for `n = 1`, directly one matrix-vector product, the
+ * coefficients of `intbas` times the powers of `pts[k]` times `E_k`.
  *
  * Complexity: `E` is `d` points `m x n`, 
  *   - `d` calls to constant nullspace with dimension `m x n`, each one
@@ -878,11 +882,15 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
  *     `X` as in `mbasis`'s degree-bump -- interpolant validity at a new
  *     point has no order-truncation-style absorbing property, so the
  *     degree-1 correction cannot be chosen freely the way `mbasis`'s can);
- *   - `d` evaluations of `intbas` at `pts[k]` (Horner) plus `d` products
- *     `evalP*E_k` to find residuals.
+ *     the part `K * intbas` is one matrix product per iteration, of the
+ *     nullspace (without its identity part) by the pivot rows of `intbas`,
+ *     with all their coefficients (scalar times row operations instead when
+ *     the rank of the residual is small);
+ *   - `d` evaluations of `intbas` at `pts[k]` plus `d` products
+ *     `intbas(pts[k])*E_k` to find residuals.
  * See @ref nmod_mat_poly_mintbasis_resupdate for a variant that skips the
- * `evalP*E_k` product every iteration, at the cost of a different
- * residual-maintenance overhead. */
+ * evaluation and the product by `E_k` at every iteration, at the cost of a
+ * different residual-maintenance overhead. */
 void nmod_mat_poly_mintbasis_rescomp(nmod_mat_poly_t intbas,
                                      slong * shift,
                                      const ulong * pts,
@@ -893,7 +901,7 @@ void nmod_mat_poly_mintbasis_rescomp(nmod_mat_poly_t intbas,
  * of future residual values `Res[j] = intbas(pts[j])*E_j`, `j =
  * k..d-1`, and update it via the SAME elementary row operations applied
  * to `intbas` at each iteration, instead of recomputing the current
- * residual via Horner evaluation as
+ * residual by evaluation as
  * @ref nmod_mat_poly_mintbasis_rescomp does.
  *
  * Unlike `mbasis`'s own `resupdate` (see @ref mbasis), whose win comes
@@ -903,8 +911,9 @@ void nmod_mat_poly_mintbasis_rescomp(nmod_mat_poly_t intbas,
  * iteration -- an `O(d^2 m n)`-ish cost with no counterpart in `mbasis`'s
  * `resupdate` (whose analogous "X-shift" step is a pure pointer
  * relabeling). So this variant is not generically cheaper the way
- * `mbasis`'s `resupdate` is; what it does win on is skipping the one real
- * matrix product (`evalP*E_k`) that `rescomp` pays every iteration. That
+ * `mbasis`'s `resupdate` is; what it does win on is skipping the evaluation
+ * and the matrix product (`intbas(pts[k])*E_k`) that `rescomp` pays every
+ * iteration. That
  * saving dominates, and this variant is measured faster, when `d` (the
  * number of points) is small relative to `m`, and/or `m-n` is small
  * (i.e. `n` close to `m`) -- see @ref nmod_mat_poly_mintbasis for the
@@ -923,11 +932,6 @@ void nmod_mat_poly_mintbasis_resupdate(nmod_mat_poly_t intbas,
  * @ref nmod_mat_poly_mintbasis_rescomp and
  * @ref nmod_mat_poly_mintbasis_resupdate depending on the shape of `E`
  * and its number of points `d`.
- *
- * The condition here, `d*(m-n+1) <= m`, was found by direct measurement
- * over a grid of `(m,n,d)`. TO INVESTIGATE.
- * 
- * \todo investigate for a better dispatcher.
  */
 void nmod_mat_poly_mintbasis(nmod_mat_poly_t intbas,
                              slong * shift,

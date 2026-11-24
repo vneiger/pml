@@ -16,20 +16,7 @@
 #include "nmod_poly_mat_utils.h"
 #include "impl.h"
 
-void nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
-                          slong * shift,
-                          const nmod_poly_mat_t pmat,
-                          ulong order)
-{
-    nmod_mat_poly_t app, matp;
-    nmod_mat_poly_init(matp, pmat->r, pmat->c, pmat->modulus);
-    nmod_mat_poly_set_trunc_from_poly_mat(matp, pmat, order);
-    nmod_mat_poly_init(app, pmat->r, pmat->r, pmat->modulus);
-    nmod_mat_poly_mbasis(app, shift, matp, order);
-    nmod_poly_mat_set_from_mat_poly(appbas, app);
-    nmod_mat_poly_clear(matp);
-    nmod_mat_poly_clear(app);
-}
+/* nmod_poly_mat_mbasis: see nmod_mat_poly_extra/nmod_mat_poly_mbasis.c */
 
 void _nmod_poly_mat_approximant_basis_krylov_leaf(nmod_poly_mat_t P,
                                                   slong * shift,
@@ -47,7 +34,8 @@ void _nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
                             slong * shift,
                             const nmod_poly_mat_t ipmat,
                             slong order,
-                            double krylov_cutoff)
+                            double krylov_cutoff,
+                            slong thres)
 {
     /* Krylov leaf: replaces the subtree below this node */
     if (_nmod_poly_mat_krylov_wanted(ipmat->r, ipmat->c, ipmat->c * order, krylov_cutoff))
@@ -65,7 +53,7 @@ void _nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
     nmod_poly_mat_init(pmat, ipmat->r, ipmat->c, ipmat->modulus);
     nmod_poly_mat_set_trunc(pmat,ipmat,order);
 
-    if (order <= PMBASIS_THRES)
+    if (order <= thres)
     {
         nmod_poly_mat_mbasis(appbas, shift, pmat, order);
         nmod_poly_mat_clear(pmat);
@@ -79,11 +67,11 @@ void _nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
     nmod_poly_mat_init(appbas2, pmat->r, pmat->r, pmat->modulus);
     nmod_poly_mat_init(residual, pmat->r, pmat->c, pmat->modulus);
 
-    _nmod_poly_mat_pmbasis(appbas, shift, pmat, order1, krylov_cutoff);
+    _nmod_poly_mat_pmbasis(appbas, shift, pmat, order1, krylov_cutoff, thres);
 
     nmod_poly_mat_mulmid(residual, appbas, pmat, order1, order);
 
-    _nmod_poly_mat_pmbasis(appbas2, shift, residual, order2, krylov_cutoff);
+    _nmod_poly_mat_pmbasis(appbas2, shift, residual, order2, krylov_cutoff, thres);
 
     nmod_poly_mat_multiply(appbas, appbas2, appbas);
 
@@ -98,5 +86,6 @@ void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
                            slong order)
 {
     _nmod_poly_mat_pmbasis(appbas, shift, pmat, order,
-                           NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF);
+                           _nmod_poly_mat_pmbasis_krylov_cutoff(pmat->r),
+                           _nmod_poly_mat_pmbasis_threshold(pmat->r, pmat->c, pmat->modulus));
 }
