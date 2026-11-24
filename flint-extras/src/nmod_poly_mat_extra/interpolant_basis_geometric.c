@@ -175,13 +175,18 @@ void _nmod_poly_mat_pmintbasis_geometric(nmod_poly_mat_t intbas,
                                          double krylov_cutoff,
                                          slong thres)
 {
-    /* d=0: no points, output is the identity, shift unchanged -- matching
-       the same convention as every other function in this project TO SEE. */
-    if (d == 0)
+    FLINT_ASSERT(d >= 0);
+
+    /* no point: the identity, shift unchanged, E and r not read, pts not
+       written (as for pmintbasis; the recursion never creates such a node,
+       see the assertion on thres) */
+    if (d <= 0)
     {
         nmod_poly_mat_one(intbas);
         return;
     }
+
+    FLINT_ASSERT(thres >= 1);
 
     if (r == 0)
     flint_throw(FLINT_ERROR,
@@ -220,10 +225,11 @@ void nmod_poly_mat_pmintbasis_geometric(nmod_poly_mat_t intbas,
                                         ulong r,
                                         slong d)
 {
+    /* d = 0: E, which may be NULL, is not read (identity) */
     _nmod_poly_mat_pmintbasis_geometric(intbas, shift, pts, E, r, d,
                                         _nmod_poly_mat_pmbasis_krylov_cutoff(intbas->r),
                                         (d > 0) ? _nmod_poly_mat_pmintbasis_geometric_threshold(intbas->r, E[0].c,
-                                                                                                intbas->modulus) : 0);
+                                                                                                intbas->modulus) : 1);
 }
 
 /** Targets the pairwise distinct points case.    
@@ -248,6 +254,8 @@ void nmod_poly_mat_pmintbasis_geometric_auto(nmod_poly_mat_t intbas,
                                              const nmod_mat_struct * E,
                                              slong d)
 {
+    FLINT_ASSERT(d >= 0);
+
     /** With the best possible r (a primitive root), rho = r^2 has 
      * order (p-1)/2, so d distinct points exist iff (p-1)/2 >= d, 
      * i.e. p >= 2*d+1; we require the documented p > 2*d+1.  */

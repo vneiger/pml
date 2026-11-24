@@ -37,6 +37,18 @@ void _nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
                             double krylov_cutoff,
                             slong thres)
 {
+    FLINT_ASSERT(order >= 0);
+
+    /* no condition: the identity, shift unchanged (the recursion below never
+       creates such a node, see the assertion on thres) */
+    if (order <= 0 || ipmat->c == 0)
+    {
+        nmod_poly_mat_one(appbas);
+        return;
+    }
+
+    FLINT_ASSERT(thres >= 1);
+
     /* Krylov leaf: replaces the subtree below this node */
     if (_nmod_poly_mat_krylov_wanted(ipmat->r, ipmat->c, ipmat->c * order, krylov_cutoff))
     {

@@ -33,10 +33,11 @@
  *       (pre-call) shift -- shift is mutated in place by the construction
  *       calls. 
  * 
- * Also includes an explicit, non-random d=0 regression case, mirroring
- * mbasis's own order=0 edge case (see t-mbasis_variants.c): with no
- * points, all three functions must return the identity with shift
- * unchanged. TO BE DISCUSSED.
+ * Also includes an explicit, non-random d=0 case, mirroring mbasis's own
+ * order 0 case (see t-mbasis_variants.c): with no points, the two variants,
+ * the dispatcher and nmod_poly_mat_mintbasis return the identity and leave
+ * the shift unchanged, without reading pts and E (see "No point" in
+ * nmod_poly_mat_interpolant.h).
  *
  * Also includes an explicit very-small-prime stress block (prime in
  * {2,3,5,7,11}): the main randomized loop below never picks a prime under
@@ -81,32 +82,49 @@ static void free_E(nmod_mat_struct * E, slong elen)
 static int check_d0(slong m, slong n, ulong prime, flint_rand_t state)
 {
     /* d is a separate explicit parameter, so d=0 is tested directly
-       against a non-trivial, randomly-filled E that is longer than d --
-       exercising "E longer than d, extra unused" (the now-plain-array
-       convention, mirroring pts's own d <= length(pts)), not just the
-       trivial d=0/E-empty case. TO SEE */
+       against a non-trivial, randomly-filled E that is longer than d
+       ("E longer than d, extra unused", as for pts), and with E = NULL */
     slong elen = 1 + n_randint(state, 5);
     nmod_mat_struct * E = build_random_E(m, n, prime, elen, state);
 
-    nmod_mat_poly_t i_res, i_upd;
+    nmod_mat_poly_t i_res, i_upd, i_disp;
+    nmod_poly_mat_t i_pm;
     nmod_mat_poly_init(i_res, m, m, prime);
     nmod_mat_poly_init(i_upd, m, m, prime);
+    nmod_mat_poly_init(i_disp, m, m, prime);
+    nmod_poly_mat_init(i_pm, m, m, prime);
 
+    slong * sh0 = flint_malloc(m * sizeof(slong));
     slong * sh_res = flint_malloc(m * sizeof(slong));
     slong * sh_upd = flint_malloc(m * sizeof(slong));
+    slong * sh_disp = flint_malloc(m * sizeof(slong));
+    slong * sh_pm = flint_malloc(m * sizeof(slong));
     for (slong i = 0; i < m; i++)
-        sh_res[i] = sh_upd[i] = n_randint(state, 10);
+        sh0[i] = sh_res[i] = sh_upd[i] = sh_disp[i] = sh_pm[i]
+            = (slong) n_randint(state, 20) - 10;
 
     nmod_mat_poly_mintbasis_rescomp(i_res, sh_res, NULL, E, 0);
     nmod_mat_poly_mintbasis_resupdate(i_upd, sh_upd, NULL, E, 0);
+    nmod_mat_poly_mintbasis(i_disp, sh_disp, NULL, NULL, 0);
+    nmod_poly_mat_mintbasis(i_pm, sh_pm, NULL, NULL, 0);
 
-    int ok = nmod_mat_poly_is_one(i_res) && nmod_mat_poly_is_one(i_upd);
+    int ok = nmod_mat_poly_is_one(i_res) && nmod_mat_poly_is_one(i_upd)
+          && nmod_mat_poly_is_one(i_disp) && nmod_poly_mat_is_one(i_pm);
+    for (slong i = 0; i < m; i++)
+        if (sh_res[i] != sh0[i] || sh_upd[i] != sh0[i]
+                || sh_disp[i] != sh0[i] || sh_pm[i] != sh0[i])
+            ok = 0;
 
     free_E(E, elen);
     nmod_mat_poly_clear(i_res);
     nmod_mat_poly_clear(i_upd);
+    nmod_mat_poly_clear(i_disp);
+    nmod_poly_mat_clear(i_pm);
+    flint_free(sh0);
     flint_free(sh_res);
     flint_free(sh_upd);
+    flint_free(sh_disp);
+    flint_free(sh_pm);
     return ok;
 }
 

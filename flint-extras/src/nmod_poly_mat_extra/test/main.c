@@ -55,6 +55,7 @@
 #include "t-weak_popov_form.c"
 #include "t-krylov_kernel_basis.c"
 #include "t-relation_basis_krylov.c"
+#include "t-relation_basis_no_condition.c"
 
 /* Array of test functions ***************************************************/
 
@@ -101,6 +102,7 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_weak_popov_form),
     TEST_FUNCTION(nmod_poly_mat_krylov_kernel_basis),
     TEST_FUNCTION(nmod_poly_mat_relation_basis_krylov),
+    TEST_FUNCTION(nmod_poly_mat_relation_basis_no_condition),
 };
 
 /* main function *************************************************************/

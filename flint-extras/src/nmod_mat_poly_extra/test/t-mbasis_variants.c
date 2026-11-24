@@ -27,17 +27,10 @@
  *       weak Popov approximant basis (nmod_poly_mat_is_approximant_basis),
  *       independent of any implementation comparison.
  *
- * FIXME next paragraph and corresponding code to be handled within issue 52
- * 
- * Also includes an explicit, non-random order=0 regression case: a
- * pre-existing bug  left `nsbas`
- * uninitialized when order=0 (the main loop never runs), making the
- * unconditional nmod_mat_clear(nsbas) at the end of the function undefined
- * behaviour -- intermittent, not a deterministic crash, since it depends on
- * whatever happens to be on the stack/heap at that point. Fixed in both
- * rescomp and resupdate by giving nsbas a trivial valid init before the
- * loop. This case is run first, unconditionally, rather than left to chance
- * inside the random loop below. */
+ * Also includes an explicit, non-random order 0 case, run first rather than
+ * left to chance inside the random loop below: the two variants, the
+ * dispatcher and nmod_poly_mat_mbasis return the identity and leave the shift
+ * unchanged (see "Order zero" in nmod_poly_mat_approximant.h). */
 
 #include <flint/test_helpers.h>
 
@@ -48,27 +41,49 @@
 
 static int check_order0(slong rdim, slong cdim, ulong prime, flint_rand_t state)
 {
-    nmod_mat_poly_t matp, app_res, app_upd;
+    nmod_mat_poly_t matp, app_res, app_upd, app_disp;
+    nmod_poly_mat_t pmat, app_pm;
     nmod_mat_poly_init(matp, rdim, cdim, prime);
     nmod_mat_poly_rand(matp, state, 1 + n_randint(state, 10));
     nmod_mat_poly_init(app_res, rdim, rdim, prime);
     nmod_mat_poly_init(app_upd, rdim, rdim, prime);
+    nmod_mat_poly_init(app_disp, rdim, rdim, prime);
+    nmod_poly_mat_init(pmat, rdim, cdim, prime);
+    nmod_poly_mat_set_from_mat_poly(pmat, matp);
+    nmod_poly_mat_init(app_pm, rdim, rdim, prime);
 
+    slong * sh0 = flint_malloc(rdim * sizeof(slong));
     slong * sh_res = flint_malloc(rdim * sizeof(slong));
     slong * sh_upd = flint_malloc(rdim * sizeof(slong));
+    slong * sh_disp = flint_malloc(rdim * sizeof(slong));
+    slong * sh_pm = flint_malloc(rdim * sizeof(slong));
     for (slong i = 0; i < rdim; i++)
-        sh_res[i] = sh_upd[i] = n_randint(state, 10);
+        sh0[i] = sh_res[i] = sh_upd[i] = sh_disp[i] = sh_pm[i]
+            = (slong) n_randint(state, 20) - 10;
 
     nmod_mat_poly_mbasis_rescomp(app_res, sh_res, matp, 0);
     nmod_mat_poly_mbasis_resupdate(app_upd, sh_upd, matp, 0);
+    nmod_mat_poly_mbasis(app_disp, sh_disp, matp, 0);
+    nmod_poly_mat_mbasis(app_pm, sh_pm, pmat, 0);
 
-    int ok = nmod_mat_poly_is_one(app_res) && nmod_mat_poly_is_one(app_upd);
+    int ok = nmod_mat_poly_is_one(app_res) && nmod_mat_poly_is_one(app_upd)
+          && nmod_mat_poly_is_one(app_disp) && nmod_poly_mat_is_one(app_pm);
+    for (slong i = 0; i < rdim; i++)
+        if (sh_res[i] != sh0[i] || sh_upd[i] != sh0[i]
+                || sh_disp[i] != sh0[i] || sh_pm[i] != sh0[i])
+            ok = 0;
 
     nmod_mat_poly_clear(matp);
     nmod_mat_poly_clear(app_res);
     nmod_mat_poly_clear(app_upd);
+    nmod_mat_poly_clear(app_disp);
+    nmod_poly_mat_clear(pmat);
+    nmod_poly_mat_clear(app_pm);
+    flint_free(sh0);
     flint_free(sh_res);
     flint_free(sh_upd);
+    flint_free(sh_disp);
+    flint_free(sh_pm);
     return ok;
 }
 

@@ -375,7 +375,11 @@ _nmod_poly_mat_pmintbasis_geometric_threshold(slong m, slong n, ulong modulus)
  * (krylov_cutoff = 0: no Krylov leaf) and the threshold of the base case as
  * parameters; nmod_poly_mat_pmbasis, nmod_poly_mat_pmintbasis and
  * nmod_poly_mat_pmintbasis_geometric use _nmod_poly_mat_pmbasis_krylov_cutoff
- * and the thresholds above. For profiling, tuning and tests. */
+ * and the thresholds above. For profiling, tuning and tests. The order (the
+ * number of points) is nonnegative, 0 giving the identity as in the public
+ * functions; thres must be at least 1, since the recursion splits orders
+ * larger than thres into ceil and floor halves (both checked with
+ * FLINT_ASSERT). */
 void _nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas, slong * shift,
                             const nmod_poly_mat_t pmat, slong order,
                             double krylov_cutoff, slong thres);
