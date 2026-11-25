@@ -54,13 +54,17 @@
  * -------------------------------
  * Consider:
  *   - an m x n matrix of univariate polynomials F,
- *   - an approximation order d (list of n positive integers).
+ *   - an approximation order d (list of n nonnegative integers).
  *
  * Then an approximant basis for (F,d) is a matrix over the univariate
  * polynomials whose rows form a basis for the following module:
  * { p in K[X]^{1 x m}  |  the column j of p F is 0 modulo X^{d[j]} }.
  * Note that such a matrix is square, m x m, and nonsingular. Its determinant
  * has the form X^k for some 0 <= k <= d[0] + d[1] + .. + d[n-1].
+ *
+ * An order d[j] = 0 means no condition on the column j. With no condition
+ * at all (all orders zero, or n = 0), every vector is an approximant and the
+ * approximant basis is the identity matrix.
  */
 
 /** \file nmod_poly_mat_approximant.h
@@ -88,11 +92,22 @@
  *
  * \param[out] appbas the output approximant basis (cannot alias `pmat`)
  * \param[in] pmat the input polynomial matrix (no restriction)
- * \param[in] order the input order (list of strictly positive integers, length must be the number of columns of `pmat`)
+ * \param[in] order the input order (list of nonnegative integers, length must be the number of columns of `pmat`; a single nonnegative integer for the functions with a uniform order)
  * \param[in,out] shift in: the input shift; and out: the output shifted row degree of `appbas` (list of integers, length must be the number of rows of `pmat`)
  *
  * Note that the latter two restrictions on the lengths of the lists are
  * assuming left approximants; for right approximants, they are swapped.
+ *
+ * Order zero. When there is no condition (uniform order 0, all orders 0, or
+ * no column), all functions return the identity matrix, which is the
+ * `shift`-Popov approximant basis for every `shift`, and leave `shift`
+ * unchanged (it is the `shift`-row degree of the identity); they do not read
+ * the coefficients of `pmat`. This is for the convenience of callers whose
+ * order may be zero. Inside PML, a caller that can meet this case should
+ * rather treat it apart than compute this identity and use it as an operand
+ * (in a product, say). Negative orders are invalid: the general interfaces
+ * and the Krylov functions below throw an exception, the other functions only
+ * check this with FLINT_ASSERT.
  */
 
 
@@ -122,6 +137,7 @@ extern "C" {
  * With `D` the sum of the orders and `n` the number of columns of positive
  * order, the algorithm is a divide and conquer on `D` (see
  * nmod_poly_mat_extra/approximant_basis_general.c):
+ * - when `D = 0`, the identity (see "Order zero" in the conventions above);
  * - when all these columns have the same order, ::nmod_poly_mat_pmbasis
  *   (with its Krylov leaves, see @ref pmbasis);
  * - otherwise, when `n' < m` and `D <= c m / n'^(1/3)` for
@@ -148,7 +164,7 @@ extern "C" {
  * \param[out] P approximant basis, initialized with dimensions `m x m`
  * \param[out] rdeg the `shift`-row degree of `P` (length `m`), or `NULL`; it may alias `shift`
  * \param[in] F input polynomial matrix, `m x n'`
- * \param[in] orders list of `n'` nonnegative integers (0: no condition on that column)
+ * \param[in] orders list of `n'` nonnegative integers (0: no condition on that column; an exception is thrown if one is negative)
  * \param[in] shift input shift (length `m`), or `NULL` for the zero shift
  * \param[in] form required form for the output basis (see #poly_mat_form_t), at most `POPOV`
  *
@@ -269,15 +285,20 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
  */
 //void popov_mbasis( ... );
 
-// TODO DOC
-// appbas must be initialized with right dimensions
-/** Size of the integers (see @ref IntegerSizes): as for
- * ::nmod_mat_poly_mbasis, it is assumed that `order <= WORD_MAX` and
- * `max(shift) + order <= WORD_MAX` for the input `shift`. */
+/** Computes a `shift`-ordered weak Popov approximant basis for
+ * `(pmat,order)`, as ::nmod_mat_poly_mbasis (see @ref mbasis in
+ * nmod_mat_poly.h), reading `pmat` and writing `appbas` directly.
+ * `appbas` must be initialized with dimensions `m x m`, for `pmat` of size
+ * `m x n`; `order` is nonnegative (order 0: the identity, see the
+ * conventions above).
+ *
+ * Size of the integers (see @ref IntegerSizes): as for
+ * ::nmod_mat_poly_mbasis, it is assumed that `max(shift) + order <= WORD_MAX`
+ * for the input `shift`. */
 void nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
                           slong * shift,
                           const nmod_poly_mat_t pmat,
-                          ulong order);
+                          slong order);
 
 //@} // doxygen group: M-Basis algorithm (uniform approximant order)
 
@@ -316,6 +337,11 @@ void nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
  * Base case: at orders up to a threshold depending on `n` (see
  * `_nmod_poly_mat_pmbasis_threshold` in nmod_poly_mat_extra/impl.h), the basis
  * is computed by ::nmod_poly_mat_mbasis.
+ *
+ * Order zero, or `n = 0`: the identity, `shift` unchanged (see the
+ * conventions above). The recursion itself never creates such a node: it
+ * splits orders larger than the threshold, which is at least 1, into two
+ * positive orders.
  *
  * Size of the integers (see @ref IntegerSizes): as in `mbasis`, each entry of
  * `shift` increases by at most `order` during the computation; it is assumed
@@ -385,8 +411,8 @@ void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
  * at that point, with different vectors of values.
  *
  * The output `P` must be initialized with dimensions `m x m`; `shift == NULL`
- * means the zero shift; the orders must be nonnegative, and the modulus
- * prime. Size of the integers (see @ref IntegerSizes): there is no condition
+ * means the zero shift; the orders must be nonnegative (an exception is
+ * thrown otherwise; `D = 0` gives the identity), and the modulus prime. Size of the integers (see @ref IntegerSizes): there is no condition
  * on the shift, whose entries may be arbitrary `slong` values; `D` is the
  * number of columns of `V`, so it is bounded by the available memory.
  *

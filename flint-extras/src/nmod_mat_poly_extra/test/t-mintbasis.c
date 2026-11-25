@@ -18,25 +18,28 @@
  * interpolant_basis (verification.c, this same staging area) for the
  * defining-property check -- the M-level output (nmod_mat_poly_t) is
  * converted to nmod_poly_mat_t via nmod_poly_mat_set_from_mat_poly
- * (nmod_poly_mat_utils.h), the same conversion nmod_poly_mat_mintbasis
- * itself uses to wrap this dispatcher (interpolant_basis.c). 
+ * (nmod_poly_mat_utils.h).
  *
  * Checks, per random trial:
  *   (1) rescomp and resupdate agree bit-for-bit (they must: same row
  *       operations, same nullspace pivot choice, only residual bookkeeping
  *       differs);
- *   (2) the dispatcher's output equals whichever of the two variants its
- *       own condition (d*(m-n+1) <= m) selects;
- *       TODO CHECK nmod_mat_poly_mintbasis.c agrees with this formula 
+ *   (2) the dispatcher's output equals that of the two variants, and so
+ *       does nmod_poly_mat_mintbasis (which writes nmod_poly_mat_t
+ *       directly); since the variants agree by (1), which one the
+ *       dispatcher chose (_nmod_mat_poly_mintbasis_resupdate_wanted,
+ *       nmod_mat_poly_extra/impl.h) does not show in the output and is not
+ *       tested here;
  *   (3) the dispatcher's output is a genuine minimal interpolant basis
  *       (membership + generation, via the verifier), w.r.t. the original 
  *       (pre-call) shift -- shift is mutated in place by the construction
  *       calls. 
  * 
- * Also includes an explicit, non-random d=0 regression case, mirroring
- * mbasis's own order=0 edge case (see t-mbasis_variants.c): with no
- * points, all three functions must return the identity with shift
- * unchanged. TO BE DISCUSSED.
+ * Also includes an explicit, non-random d=0 case, mirroring mbasis's own
+ * order 0 case (see t-mbasis_variants.c): with no points, the two variants,
+ * the dispatcher and nmod_poly_mat_mintbasis return the identity and leave
+ * the shift unchanged, without reading pts and E (see "No point" in
+ * nmod_poly_mat_interpolant.h).
  *
  * Also includes an explicit very-small-prime stress block (prime in
  * {2,3,5,7,11}): the main randomized loop below never picks a prime under
@@ -81,32 +84,49 @@ static void free_E(nmod_mat_struct * E, slong elen)
 static int check_d0(slong m, slong n, ulong prime, flint_rand_t state)
 {
     /* d is a separate explicit parameter, so d=0 is tested directly
-       against a non-trivial, randomly-filled E that is longer than d --
-       exercising "E longer than d, extra unused" (the now-plain-array
-       convention, mirroring pts's own d <= length(pts)), not just the
-       trivial d=0/E-empty case. TO SEE */
+       against a non-trivial, randomly-filled E that is longer than d
+       ("E longer than d, extra unused", as for pts), and with E = NULL */
     slong elen = 1 + n_randint(state, 5);
     nmod_mat_struct * E = build_random_E(m, n, prime, elen, state);
 
-    nmod_mat_poly_t i_res, i_upd;
+    nmod_mat_poly_t i_res, i_upd, i_disp;
+    nmod_poly_mat_t i_pm;
     nmod_mat_poly_init(i_res, m, m, prime);
     nmod_mat_poly_init(i_upd, m, m, prime);
+    nmod_mat_poly_init(i_disp, m, m, prime);
+    nmod_poly_mat_init(i_pm, m, m, prime);
 
+    slong * sh0 = flint_malloc(m * sizeof(slong));
     slong * sh_res = flint_malloc(m * sizeof(slong));
     slong * sh_upd = flint_malloc(m * sizeof(slong));
+    slong * sh_disp = flint_malloc(m * sizeof(slong));
+    slong * sh_pm = flint_malloc(m * sizeof(slong));
     for (slong i = 0; i < m; i++)
-        sh_res[i] = sh_upd[i] = n_randint(state, 10);
+        sh0[i] = sh_res[i] = sh_upd[i] = sh_disp[i] = sh_pm[i]
+            = (slong) n_randint(state, 20) - 10;
 
     nmod_mat_poly_mintbasis_rescomp(i_res, sh_res, NULL, E, 0);
     nmod_mat_poly_mintbasis_resupdate(i_upd, sh_upd, NULL, E, 0);
+    nmod_mat_poly_mintbasis(i_disp, sh_disp, NULL, NULL, 0);
+    nmod_poly_mat_mintbasis(i_pm, sh_pm, NULL, NULL, 0);
 
-    int ok = nmod_mat_poly_is_one(i_res) && nmod_mat_poly_is_one(i_upd);
+    int ok = nmod_mat_poly_is_one(i_res) && nmod_mat_poly_is_one(i_upd)
+          && nmod_mat_poly_is_one(i_disp) && nmod_poly_mat_is_one(i_pm);
+    for (slong i = 0; i < m; i++)
+        if (sh_res[i] != sh0[i] || sh_upd[i] != sh0[i]
+                || sh_disp[i] != sh0[i] || sh_pm[i] != sh0[i])
+            ok = 0;
 
     free_E(E, elen);
     nmod_mat_poly_clear(i_res);
     nmod_mat_poly_clear(i_upd);
+    nmod_mat_poly_clear(i_disp);
+    nmod_poly_mat_clear(i_pm);
+    flint_free(sh0);
     flint_free(sh_res);
     flint_free(sh_upd);
+    flint_free(sh_disp);
+    flint_free(sh_pm);
     return ok;
 }
 
@@ -141,7 +161,7 @@ static int core_test_mintbasis(const nmod_mat_struct * E, slong m, slong n, ulon
         if (sh_res[i] != sh_upd[i])
             res = 0;
 
-    /* (2) dispatcher matches whichever variant it should have picked */
+    /* (2) the dispatcher and nmod_poly_mat_mintbasis give the same output */
     if (res)
     {
         if (!nmod_mat_poly_equal(out_disp, out_upd))
@@ -150,22 +170,27 @@ static int core_test_mintbasis(const nmod_mat_struct * E, slong m, slong n, ulon
             if (sh_disp[i] != sh_upd[i])
                 res = 0;
 
-        // int expect_resupdate = (d * (m - n + 1) <= m);
-        // nmod_mat_poly_struct * expected = expect_resupdate ? out_upd : out_res;
-        // slong * sh_expected = expect_resupdate ? sh_upd : sh_res;
-        // if (!nmod_mat_poly_equal(out_disp, expected))
-        //     res = 0;
-        // for (slong i = 0; i < m; i++)
-        //     if (sh_disp[i] != sh_expected[i])
-        //         res = 0;
+        slong * sh_pm = flint_malloc(m * sizeof(slong));
+        for (slong i = 0; i < m; i++)
+            sh_pm[i] = shift0[i];
+        nmod_poly_mat_t out_pm, out_disp_pm;
+        nmod_poly_mat_init(out_pm, m, m, prime);
+        nmod_poly_mat_init(out_disp_pm, m, m, prime);
+        nmod_poly_mat_mintbasis(out_pm, sh_pm, pts, E, d);
+        nmod_poly_mat_set_from_mat_poly(out_disp_pm, out_disp);
+        if (!nmod_poly_mat_equal(out_pm, out_disp_pm))
+            res = 0;
+        for (slong i = 0; i < m; i++)
+            if (sh_pm[i] != sh_disp[i])
+                res = 0;
+        nmod_poly_mat_clear(out_pm);
+        nmod_poly_mat_clear(out_disp_pm);
+        flint_free(sh_pm);
     }
 
-    /* (3) genuine minimal interpolant basis, w.r.t. the originalshift0 --
-       build the nmod_poly_mat_t E used by the verifier directly from the
-       first d entries of the plain array (nmod_poly_mat_set_coeff_mat,
-       the same primitive interpolant_basis.c itself uses in the other
-       direction), and convert out_disp to nmod_poly_mat_t the same way
-       nmod_poly_mat_mintbasis itself uses to wrap this dispatcher */
+    /* (3) genuine minimal interpolant basis, w.r.t. the original shift0 (the
+       verifier takes E as the same plain array; out_disp is converted to
+       nmod_poly_mat_t) */
     if (res)
     {
         nmod_poly_mat_t out_disp_pm;
@@ -193,8 +218,7 @@ TEST_FUNCTION_START(nmod_mat_poly_mintbasis, state)
 {
     int i, result;
 
-    /* explicit d=0 regression case, both sides of the dispatcher's own
-       boundary, not left to chance */
+    /* explicit d = 0 case, for random shapes, not left to chance */
     for (i = 0; i < 20; i++)
     {
         slong m = 1 + n_randint(state, 15);

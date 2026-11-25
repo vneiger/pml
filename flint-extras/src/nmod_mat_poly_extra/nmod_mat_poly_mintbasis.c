@@ -325,6 +325,9 @@ _nmod_mat_poly_mintbasis(nmod_mat_poly_t intbas, slong * shift,
     const slong m = intbas->r;
     _mintbasis_t S;
 
+    FLINT_ASSERT(d >= 0);
+
+    /* no point: the identity, shift unchanged, pts and E not read */
     nmod_mat_poly_one(intbas);
     if (d <= 0)
         return;
@@ -367,7 +370,7 @@ void nmod_mat_poly_mintbasis(nmod_mat_poly_t intbas,
                              const nmod_mat_struct * E,
                              slong d)
 {
-    /* d = 0: E is never read */
+    /* d = 0: E, which may be NULL, is not read (identity) */
     _nmod_mat_poly_mintbasis(intbas, shift, pts, E, d,
                              (d > 0) && _nmod_mat_poly_mintbasis_resupdate_wanted(intbas->r, E[0].c, d,
                                                                                   NMOD_BITS(intbas->mod)),
@@ -386,6 +389,9 @@ void nmod_poly_mat_mintbasis(nmod_poly_mat_t intbas,
     nmod_t mod;
     _mintbasis_t S;
 
+    FLINT_ASSERT(d >= 0);
+
+    /* no point: the identity, shift unchanged, pts and E not read */
     if (d <= 0)
     {
         nmod_poly_mat_one(intbas);

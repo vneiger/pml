@@ -716,6 +716,10 @@ nmod_mat_poly_set_from_poly_mat(nmod_mat_poly_t matp, const nmod_poly_mat_t pmat
  * At the end of the computation, the vector `shift` contains the shifted row
  * degree of `appbas`, for the input shift. 
  *
+ * The order is nonnegative (checked with FLINT_ASSERT). For order 0, as when
+ * `pmat` is zero modulo `x^order`, the output is the identity and `shift` is
+ * unchanged (see "Order zero" in nmod_poly_mat_approximant.h).
+ *
  * Size of the integers (see @ref IntegerSizes): each entry of `shift`
  * increases by at most `order` during the computation; it is assumed that
  * `max(shift) + order <= WORD_MAX` for the input `shift`.
@@ -845,6 +849,10 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
  * 
  * At the end of the computation, the vector `shift` contains the shifted
  * row degree of `intbas`, for the input shift.
+ *
+ * The number of points `d` is nonnegative (checked with FLINT_ASSERT). For
+ * `d = 0` the output is the identity, `shift` is unchanged, and `pts` and `E`
+ * are not read (they may be `NULL`).
  *
  * Size of the integers (see @ref IntegerSizes): each entry of `shift`
  * increases by at most `d` (the number of points) during the computation; it

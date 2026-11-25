@@ -191,6 +191,25 @@ int verify_matrix_rank_profile(const nmod_poly_mat_t mat, const slong * mrp)
     return 1;
 }
 
+// verify row rank profile against the one computed by weak Popov form
+int verify_rrp_against_weak_popov(const nmod_poly_mat_t mat, const slong * rrp, slong rk)
+{
+    nmod_poly_mat_t copy;
+    nmod_poly_mat_init_set(copy, mat);
+    slong * pivind = flint_malloc(FLINT_MAX(1, mat->r) * sizeof(slong));
+    slong * rrp_wp = flint_malloc(FLINT_MAX(1, mat->r) * sizeof(slong));
+    slong rk_wp = nmod_poly_mat_weak_popov_iter(copy, NULL, NULL, pivind, rrp_wp, ROW_UPPER);
+    int res = (rk_wp == rk);
+    for (slong i = 0; res && i < rk; i++)
+        res = (rrp[i] == rrp_wp[i]);
+    if (!res)
+        printf("~~~ verify_rrp_against_weak_popov ~~~ INCORRECT\n");
+    nmod_poly_mat_clear(copy);
+    flint_free(pivind);
+    flint_free(rrp_wp);
+    return res;
+}
+
 // test one given input for hermite form
 int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t state)
 {
@@ -353,7 +372,7 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
     }
 
     { // Mulder-Storjohann's algorithm
-        slong * rrp = NULL;
+        slong * rrp = flint_malloc(FLINT_MAX(1, max_rank) * sizeof(slong));
         nmod_poly_mat_set(hnf, mat);
         nmod_poly_mat_one(tsf);
         timeit_t t0, t1;
@@ -388,6 +407,8 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
             verif_hnf = verify_hermite_form(hnf, pivind, tsf, rk, mat, state);
 #endif /* ifdef NOTRANS */
         }
+        if (verif_hnf && rk >= 0)
+            verif_hnf = verify_rrp_against_weak_popov(mat, rrp, rk);
         if (!verif_hnf)
             printf("HNF -- matrix-gcd -- failure.\n");
         timeit_stop(t0);

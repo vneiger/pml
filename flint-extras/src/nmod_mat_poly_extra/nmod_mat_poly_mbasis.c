@@ -411,6 +411,10 @@ _nmod_mat_poly_mbasis(nmod_mat_poly_t appbas, slong * shift,
     const slong m = matp->r, n = matp->c;
     _mbasis_t S;
 
+    FLINT_ASSERT(order >= 0);
+
+    /* no condition (order 0, or matp zero modulo x^order): the identity,
+       shift unchanged */
     nmod_mat_poly_one(appbas);
     if (nmod_mat_poly_is_zero(matp) || order <= 0)
         return;
@@ -467,20 +471,24 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
 void nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
                           slong * shift,
                           const nmod_poly_mat_t pmat,
-                          ulong order)
+                          slong order)
 {
     const slong m = pmat->r, n = pmat->c;
     slong L = 0;
     nmod_t mod;
     _mbasis_t S;
 
+    FLINT_ASSERT(order >= 0);
+
     nmod_init(&mod, pmat->modulus);
 
     for (slong i = 0; i < m; i++)
         for (slong j = 0; j < n; j++)
             L = FLINT_MAX(L, nmod_poly_length(nmod_poly_mat_entry(pmat, i, j)));
-    L = FLINT_MIN(L, (slong) order);
+    L = FLINT_MIN(L, order);
 
+    /* no condition (order 0, or pmat zero modulo x^order): the identity,
+       shift unchanged */
     if (L <= 0)
     {
         nmod_poly_mat_one(appbas);
@@ -492,7 +500,7 @@ void nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
 
     /* pointer tables for _pml_transpose (input: L destinations, n sources;
        output: m destinations, len <= order + 1 sources) */
-    const slong nptr = FLINT_MAX(FLINT_MAX(L, n), FLINT_MAX(m, (slong) order + 1));
+    const slong nptr = FLINT_MAX(FLINT_MAX(L, n), FLINT_MAX(m, order + 1));
     nn_ptr * dst = (nn_ptr *) flint_malloc(nptr * sizeof(nn_ptr));
     nn_srcptr * src = (nn_srcptr *) flint_malloc(nptr * sizeof(nn_srcptr));
     slong * slen = (slong *) flint_malloc(nptr * sizeof(slong));

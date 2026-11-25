@@ -102,10 +102,11 @@ void nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
                               const nmod_mat_struct * E,
                               slong d)
 {
+    /* d = 0: E, which may be NULL, is not read (identity) */
     _nmod_poly_mat_pmintbasis(intbas, shift, pts, E, d,
                               _nmod_poly_mat_pmbasis_krylov_cutoff(intbas->r),
                               (d > 0) ? _nmod_poly_mat_pmintbasis_threshold(intbas->r, E[0].c,
-                                                                            intbas->modulus) : 0);
+                                                                            intbas->modulus) : 1);
 }
 
 void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
@@ -116,8 +117,21 @@ void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
                                double krylov_cutoff,
                                slong thres)
 {
+    FLINT_ASSERT(d >= 0);
+
+    /* no condition: the identity, shift unchanged, pts and E not read when
+       d = 0 (the recursion below never creates such a node, see the
+       assertion on thres) */
+    if (d <= 0 || E[0].c == 0)
+    {
+        nmod_poly_mat_one(intbas);
+        return;
+    }
+
+    FLINT_ASSERT(thres >= 1);
+
     /* Krylov leaf: replaces the subtree below this node */
-    if (d > 0 && _nmod_poly_mat_krylov_wanted(intbas->r, E[0].c, E[0].c * d, krylov_cutoff))
+    if (_nmod_poly_mat_krylov_wanted(intbas->r, E[0].c, E[0].c * d, krylov_cutoff))
     {
         _nmod_poly_mat_pmintbasis_krylov_leaf(intbas, shift, pts, E, d);
         return;

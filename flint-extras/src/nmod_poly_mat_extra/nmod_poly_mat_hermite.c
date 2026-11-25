@@ -938,25 +938,24 @@ slong nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
     {
         // we missed a pivot, in the column mat[:,rk]
         // -> rank rk should be incremented (at end of scope for convenience)
-        // -> TODO the row rank profile of the input mat is rrp modified by adding
-        // pi-i to the rrp, meaning the "pi-i"-th row of mat was actually in
-        // the row rank profile (this is valid because weak Popov uses row
-        // rotations to put zero rows at the end)
-
-        // handle additional pivot: update pivind and rrp
+        // -> the weak Popov form moved the zero rows to the end by rotations,
+        // keeping their order: row pi of mat comes from the (pi-rk)-th input
+        // row (counting from 0) which is not in rrp[:rk]; this row is in the
+        // row rank profile of the input
         if (rrp)
         {
-            printf("RRP!!!\n");
-            // TODO to be completed
-            // find the "pi-i -th gap" in rrp
-            slong iii = 0; slong ii = 0;
-            while (iii < pi-rk && ii < iii)
+            // find the index irow of that input row and insert it in rrp,
+            // which is sorted increasingly
+            slong irow = pi - rk;
+            slong k = 0;
+            while (k < rk && rrp[k] <= irow)
             {
-                if (iii < rrp[ii])
-                    iii++;
-                else
-                    ii++;
+                irow++;
+                k++;
             }
+            for (slong kk = rk; kk > k; kk--)
+                rrp[kk] = rrp[kk-1];
+            rrp[k] = irow;
         }
         // while there is another nonzero below pi, xgcd-solve collision
         nmod_poly_t g; // gcd

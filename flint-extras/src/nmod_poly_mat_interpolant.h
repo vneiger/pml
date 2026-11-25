@@ -85,6 +85,18 @@
  * \param[in,out] shift in: the input shift; and out: the output shifted row
  *   degree of `intbas` (list of integers, length must be the number of
  *   rows of `E`).
+ *
+ * No point. `d` is nonnegative (checked with FLINT_ASSERT). For `d = 0`, as
+ * for matrices `E_k` with no column, there is no condition: all functions
+ * return the identity matrix, which is the `shift`-Popov interpolant basis for
+ * every `shift`, and leave `shift` unchanged; with `d = 0` they do not read
+ * `pts` and `E`, which may be `NULL`. The same holds for
+ * ::nmod_poly_mat_interpolant_basis and
+ * ::nmod_poly_mat_interpolant_basis_krylov when `V` has no column. As for
+ * approximant bases (see "Order zero" in nmod_poly_mat_approximant.h), this
+ * is for the convenience of callers; inside PML, a caller that can meet this
+ * case should rather treat it apart than compute this identity and use it as
+ * an operand.
  * 
  * Sources.
  * --------
